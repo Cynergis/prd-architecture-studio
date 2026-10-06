@@ -1,0 +1,9 @@
+{
+  "name": "prd-architecture-studio",
+  "version": "0.7.0",
+  "description": "BMAD-inspired skills that drive the buildup of a Product Requirements Document and an Architecture & Design document, generate a navigable, traceable HTML site, and distill a validated product into a typed knowledge graph that feeds an organization knowledge mesh.",
+  "author": {
+    "name": "chiheb"
+  },
+  "keywords": ["bmad", "prd", "architecture", "ddd", "requirements", "documentation", "knowledge-graph", "ontology"]
+}
