@@ -29,13 +29,13 @@ knowledge base (an OTO project) is the source of truth from the first confirmed 
 | **1 Start** | asks which kind of product (`oto registry list --product-types`, or the packs on the machine) and what the person has (nothing, notes, a brief); makes the project (`oto init --empty --ontology <packs>`: the vocabulary, and a graph that holds only what this product's people say, never the packs' examples), installs the packs the type needs | the **start** skill of OTO for a brief |
 | **2 Specify** | captures the specification section by section against the type's pack; after each confirmed section, contributes it and reports what the graph now answers | the **capture** skill, against `product` and `product-<type>` |
 | **3 Derive the domain** | "what must this product know?": hands the spec to OTO, derives the domain questions, has the person confirm them, runs the interview | OTO's **start** (from the spec) and **ontology-interview** |
-| **4 Design and flow** | captures the architecture and the build flow the same way; every component traces to a requirement because `satisfies` is a relation | the **capture** skill, against `ddd` (which brings `software-architecture`) and `flow` |
+| **4 Design and flow** | captures the architecture and the build flow the same way; every component traces to a requirement because `satisfies` is a relation | the **capture** skill, against `ddd` (which brings `software-architecture`) and `flow` (its steps, checks, transitions, artifacts) |
 | **5 Build** | the implementing agent asks `kg_brief` before it acts and is BLOCKED by name when a fact is missing | **feature-flow** (reads the graph) |
 | **6 Publish** | exports the domain pack, publishes it to the marketplace, publishes the store, regenerates the site; says the install line | `oto ontology export`, `oto pack new/publish`, `oto publish`, **prd-site** |
 | **7 Readers** | a colleague installs one pack and asks; a correction goes through the gates and back as a pull request | the pack's skills, OTO's **query-knowledge** and **curate** |
 
-Scene 4's `flow` pack and scene 5's briefs are still being made; say so when the person reaches
-them, and capture what exists (the design packs do).
+Scene 6's publishing and scene 7's readers are still being made; say so when the person reaches
+them.
 
 ## Operating principles (never compromise these)
 

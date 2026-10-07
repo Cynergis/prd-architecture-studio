@@ -1,102 +1,103 @@
 ---
 name: feature-flow
 description: >
-  Governed, gated process for adding or changing a product feature (from a blank product or as a new
-  feature). Always: validate the idea against product goals and coherence, stop for approval, analyze
-  architecture and code impact, stop for approval, finalize Gherkin acceptance criteria with SME
-  validation, then implement test-first so every acceptance test passes. Use whenever the user wants
-  to add a feature, change a feature, propose a capability, or build product features.
+  Governed, gated process for adding or changing a product feature, read from the knowledge base:
+  validate the idea against the product's purpose (the graph's answers, not a document), stop for
+  approval, assess the impact on the design and the flow (the graph's neighbours and briefs), stop
+  for approval, finalize the acceptance scenarios with SME validation, then implement test-first
+  with the brief in hand — BLOCKED by name when a fact the implementation needs is missing. Use
+  whenever the user wants to add a feature, change a feature, propose a capability, or build
+  product features.
 ---
 
-# Feature flow (gated)
+# Feature flow (gated), on the graph
 
-This is the mandatory path for any feature work. Move through the phases in order. **Each gate is a
-hard stop** — present findings, then HALT and wait for the user's explicit decision before continuing.
-Never skip a gate, never start implementation before Gate 3.
+The mandatory path for any feature work. Move through the phases in order. **Each gate is a hard
+stop**: present findings, then HALT and wait for the person's explicit decision. Never skip a gate,
+never start implementation before Gate 3, never implement a step whose brief is BLOCKED.
 
-Ground every assessment in the current `data.js` (`window.__PRD__` and `window.__ARCH__`) following
-`${CLAUDE_PLUGIN_ROOT}/skills/prd-site/references/data-schema.md`. If the PRD or Architecture does not
-exist yet, build them first with **prd-build** / **architecture-build**, then return here per feature.
-
-Keep `data.js` the source of truth: as decisions are accepted, write the resulting FRs, use cases,
-policies, ADRs, components, and resources into it, and regenerate the site with **prd-site** so the
-documentation matches reality.
-
----
+Ground every assessment in the knowledge base (an OTO project; `oto status --project <root>`),
+never in a document you wrote or remember. What the graph does not say is a finding ("no
+requirement governs the credit report"), not a gap to fill by guessing. If the specification or the
+design is not captured yet, capture it first (**prd-build**, **architecture-build**), then return.
 
 ## Phase 1 — Idea validation (product coherence)
 
-Restate the feature in one sentence, then assess it against the PRD:
+Restate the feature in one sentence, then ask the graph:
 
-- **Goal alignment** — which success metric(s) (`SC#`) or company key results it moves. If it moves
-  none, say so plainly.
-- **Value-proposition fit** — is it coherent with the vision, differentiator, and target users?
-- **Coherence with existing features** — check FRs, use cases, and policies for conflicts, overlaps,
-  or duplication. Name any incoherence explicitly.
-- **Usability & value impact** — effect on the affected personas and journeys; does it raise or
-  dilute overall product value? Any added user-facing complexity?
-- **Scope fit** — MVP / Growth / Vision.
+- **Purpose** — which value proposition or objective it would serve: `kg_ask PR4` (what serves
+  what today), `kg_ask PR5 GOAL=<objective>` (how success is measured). If it serves nothing the
+  product pursues, say so plainly.
+- **Coherence** — the requirements, features and policies it touches: `kg_search`, `kg_neighbors`
+  on the requirement it extends, `kg_ask PR24 THING=<it>` (the policies that apply). Name every
+  conflict or duplicate.
+- **People and journeys** — `kg_ask PR3 PRODUCT=<product>` (who it is for), `kg_ask PR9
+  JOURNEY=<journey>` (the journey it changes).
+- **Scope** — `kg_ask PR6 RELEASE=<release>`: in scope, excluded, or unplaced.
 
-Produce a short **Idea Assessment**: a verdict (proceed / refine / reject), the reasons, the risks,
-and the requirements it would add or change.
+Produce a short **Idea Assessment**: verdict (proceed / refine / reject), reasons, risks, and the
+requirements it would add or change — each as a capture item, ready for the **capture** skill.
 
-> 🛑 **GATE 1.** Present the Idea Assessment and STOP. Wait for the user to accept, refine, or reject.
-> Do not proceed until they accept. If they refine, re-run Phase 1.
+> 🛑 **GATE 1.** Present the Idea Assessment and STOP. Wait for the person to accept, refine, or
+> reject. If they accept, capture the new or changed requirements (**capture**, against
+> `product` and the type's pack) before Phase 2.
 
----
+## Phase 2 — Impact on the design and the flow
 
-## Phase 2 — Architecture & code impact analysis
+Only after Gate 1. Ask the graph, not the code:
 
-Only after Gate 1 acceptance. Assess against `window.__ARCH__`:
+- **Design surface** — `kg_ask SA17` (requirements nothing satisfies yet), `kg_ask DD24`
+  (use cases satisfying no requirement), `kg_neighbors` on the contexts, components and
+  aggregates the requirement reaches (`satisfies`, `deployed_as`, `part_of`).
+- **Flow surface** — `kg_brief impact-artifact ARTIFACT=<artifact>` and `kg_brief
+  impact-parameter PARAM=<parameter>` for anything the feature changes; `kg_ask FL9
+  STEP=<step>` for who consumes what a step writes.
+- **Decisions and risks** — `kg_ask DD19 THING=<element>` (why it is the way it is), `kg_ask
+  PR13` (what threatens what).
+- **Rating** — low / medium / high effort and risk, from the number of elements reached. No time
+  estimates.
 
-- **Surface touched** — which subdomains, components, aggregates, resources, APIs, integrations.
-- **Complexity added** — does it increase coupling or moving parts? New ADRs, or changes to existing
-  ADRs? New resources (DB, queue, storage)?
-- **Risk** — data migration, performance/NFR pressure, security/governance exposure, blast radius.
-- **Feasibility** — is it easily supported by the current architecture? Give the **simplest plan** to
-  add it to the architecture and the code, and state what is required.
-- **Rating** — low / medium / high effort and risk (no time estimates).
+Produce an **Impact Analysis**: the elements touched (by id), the decisions to record, the
+simplest plan. New or changed design elements are capture items for **architecture-build**; a new
+or changed step is a capture item for the flow.
 
-Produce an **Impact Analysis** with a recommended implementation plan and any new/changed ADRs.
+> 🛑 **GATE 2.** Present the Impact Analysis and STOP. Wait for approval, or iterate. If approved,
+> capture the design and flow changes before Phase 3.
 
-> 🛑 **GATE 2.** Present the Impact Analysis and STOP. Wait for approval, or iterate the plan until the
-> user is satisfied.
+## Phase 3 — Acceptance scenarios + SME validation
 
----
-
-## Phase 3 — Acceptance criteria (Gherkin) + SME validation
-
-After Gate 2. Write or complete the use case(s) for the feature and its **acceptance scenarios** in
-Given / When / Then form, at the behaviour level (no UI selectors, no implementation detail):
-
-- Map each scenario to the FR(s) it verifies; ensure every FR the feature introduces is covered.
-- Include the main success path plus the important alternate and failure paths.
-- Present the scenarios for SME review. Incorporate feedback until they are validated.
+After Gate 2. Write the use case(s) and their **scenarios** (given / when / then, behaviour level,
+no UI selectors) as capture items: a `Scenario` that `exercises` the use case or the requirement.
+Every requirement the feature introduces is exercised by at least one; `kg_ask DD5 USECASE=<use
+case>` shows what exists. Present them for SME review; capture them when validated
+(`use-case-has-scenario` stops warning).
 
 > 🛑 **GATE 3.** Get explicit authorization to implement. Do not write code before this.
 
----
+## Phase 4 — Test-first implementation, with the brief
 
-## Phase 4 — Test-first implementation
+Only after Gate 3. For every step the feature adds or changes:
 
-Only after Gate 3 authorization.
-
-1. **Generate the tests first.** Turn the acceptance scenarios into Gherkin `.feature` files and
-   scaffold the executable tests (Cucumber step definitions or Playwright specs — match the project's
-   stack; default to Gherkin `.feature` + Playwright if none exists).
-2. **Implement the code** to satisfy the scenarios, following the approved plan and the project's
-   patterns and architecture boundaries.
-3. **Run the acceptance tests.** Loop: fix the code and re-run until **all** acceptance tests pass.
-4. **When a test fails, diagnose honestly:**
-   - If the **code** is wrong, fix the code.
-   - If the **test** is wrong (mis-stated expectation), fix the test.
-   - If the failure reveals an **incoherence between the feature and how we accepted it**, STOP and
-     flag it to the user. Do not quietly weaken acceptance criteria to make tests pass.
-5. **Sync the model.** Write the new/changed FRs, use case + acceptance, policies, ADRs, components,
-   and resources into `data.js`, then regenerate the site with **prd-site**.
+1. **Ask the brief before anything.** `kg_brief write-tests STEP=<step>` then `kg_brief
+   implement-step STEP=<step>`. READY: the brief's facts are the specification you implement —
+   cite them in code and tests (`# implements check.fund-report.chk-unmapped`). **BLOCKED**:
+   stop, report the questions and gaps in the engine's words, and have the person capture what is
+   missing (a field specification, a check's metric, an outcome's transition); never guess it,
+   never implement around it. Re-ask until READY.
+2. **Generate the tests first.** FL12 lists the obligations: a pass and a fail case per check, a
+   route per transition, a property per invariant. Scaffold them in the project's stack.
+3. **Implement the code** to satisfy the tests, inside the step's declared reads and writes (FL2),
+   recording its metrics (FL5), reading its parameters from config (FL6).
+4. **Run the tests.** Fix the code or the test honestly; if a failure reveals an incoherence between
+   the feature and how it was accepted, STOP and say so. Never weaken an acceptance criterion.
+5. **Record what became true.** The step is implemented: capture `isImplemented` and the
+   `Implementation` (its path, that it exists) so FL15 stops listing it, and the use case's
+   readiness moves on. The site is regenerated from the graph by **prd-site**.
 
 ## Definition of done
 
-- Idea accepted (Gate 1), impact approved (Gate 2), acceptance validated and authorized (Gate 3).
-- Every acceptance test implemented and passing; no acceptance criterion weakened to force a pass.
-- `data.js` updated and the site regenerated so docs, tests, and code agree.
+- Idea accepted (Gate 1), impact approved (Gate 2), scenarios validated and authorized (Gate 3).
+- Every step's brief was READY before its code existed; every test obligation implemented and
+  passing; no criterion weakened.
+- The graph says the feature exists: the requirement is satisfied, the use case has its scenarios,
+  the step is implemented. `oto query questions` is the proof, not a status report.

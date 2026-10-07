@@ -1,0 +1,476 @@
+{
+  "doc": "report-product-flow",
+  "as_of": "2026-10-07",
+  "scope": "fund-report",
+  "items": [
+    {
+      "type": "Flow",
+      "id": "FLOW",
+      "label": "Fund report production flow",
+      "summary": "The monthly production of the fund documents from finished data.",
+      "fields": {
+        "value": "1.0.0"
+      },
+      "links": {
+        "hasStep": [
+          "R0",
+          "R1",
+          "R2",
+          "R3",
+          "END-OK",
+          "END-REJECTED"
+        ]
+      },
+      "where": "§1",
+      "quote": "Fund report production flow"
+    },
+    {
+      "type": "Phase",
+      "id": "PH-RUN",
+      "label": "Production run",
+      "summary": "Each month: load the finished data, render, verify, publish.",
+      "links": {
+        "entrypoint": [
+          "R0"
+        ]
+      },
+      "where": "§1",
+      "quote": "Each month: load the finished data, render, verify, publish."
+    },
+    {
+      "type": "ConfigParameter",
+      "id": "CFG-MAX-UNMAPPED",
+      "label": "max_unmapped_fields",
+      "summary": "The number of unmapped fields a run tolerates: none.",
+      "fields": {
+        "paramName": "max_unmapped_fields",
+        "value": "0",
+        "sourceRef": "flow.json#/config/max_unmapped_fields"
+      },
+      "where": "§1",
+      "quote": "max_unmapped_fields"
+    },
+    {
+      "type": "ConfigParameter",
+      "id": "CFG-DEADLINE-H",
+      "label": "deadline_hours",
+      "summary": "Hours after the as-of date by which the batch must be delivered.",
+      "fields": {
+        "paramName": "deadline_hours",
+        "value": "24",
+        "sourceRef": "flow.json#/config/deadline_hours"
+      },
+      "where": "§1",
+      "quote": "deadline_hours"
+    },
+    {
+      "type": "Artifact",
+      "id": "ART-DATA",
+      "label": "batch_data",
+      "summary": "The finished columns of the month, one row per fund.",
+      "fields": {
+        "path": "{run_dir}/batch_data.json",
+        "format": "json",
+        "carries": [
+          "Table",
+          "Column"
+        ],
+        "sourceRef": "flow.json#/artifacts/batch_data"
+      },
+      "links": {
+        "hasArtifactField": [
+          "FLD-DATA-ROWS"
+        ]
+      },
+      "where": "§1",
+      "quote": "batch_data"
+    },
+    {
+      "type": "ArtifactField",
+      "id": "FLD-DATA-ROWS",
+      "label": "rows[].fund_id",
+      "fields": {
+        "fieldPath": "rows[].fund_id"
+      },
+      "where": "§1",
+      "quote": "rows[].fund_id"
+    },
+    {
+      "type": "Artifact",
+      "id": "ART-DOCS",
+      "label": "documents",
+      "summary": "The rendered documents, one per fund and locale.",
+      "fields": {
+        "path": "{run_dir}/documents/",
+        "format": "pdf",
+        "carries": [
+          "RenderedDocument"
+        ],
+        "sourceRef": "flow.json#/artifacts/documents"
+      },
+      "where": "§1",
+      "quote": "documents"
+    },
+    {
+      "type": "Artifact",
+      "id": "ART-VERIFY",
+      "label": "verify_report",
+      "summary": "Which documents passed verification, and which fields failed.",
+      "fields": {
+        "path": "{run_dir}/verify_report.json",
+        "format": "json",
+        "carries": [
+          "VerificationResult"
+        ],
+        "sourceRef": "flow.json#/artifacts/verify_report"
+      },
+      "where": "§1",
+      "quote": "verify_report"
+    },
+    {
+      "type": "DeterministicStep",
+      "id": "R0",
+      "label": "Load the batch data",
+      "summary": "Reads the finished columns of the month.",
+      "fields": {
+        "stepId": "R0_load",
+        "command": "python {skill_dir}/steps/load.py --run-dir {run_dir}",
+        "isImplemented": false,
+        "sourceRef": "flow.json#/nodes/R0_load"
+      },
+      "links": {
+        "inPhase": [
+          "PH-RUN"
+        ],
+        "writes": [
+          "ART-DATA"
+        ],
+        "hasOutcome": [
+          "OUT-R0-PASS"
+        ]
+      },
+      "where": "§2",
+      "quote": "Load the batch data"
+    },
+    {
+      "type": "Outcome",
+      "id": "OUT-R0-PASS",
+      "label": "pass",
+      "fields": {
+        "outcomeName": "pass"
+      },
+      "where": "§1",
+      "quote": "pass"
+    },
+    {
+      "type": "DeterministicStep",
+      "id": "R1",
+      "label": "Render the documents",
+      "summary": "Produces one document per fund and locale from the definition and the data.",
+      "fields": {
+        "stepId": "R1_render",
+        "command": "python {skill_dir}/steps/render.py --run-dir {run_dir}",
+        "isImplemented": false,
+        "sourceRef": "flow.json#/nodes/R1_render"
+      },
+      "links": {
+        "inPhase": [
+          "PH-RUN"
+        ],
+        "reads": [
+          "ART-DATA"
+        ],
+        "writes": [
+          "ART-DOCS"
+        ],
+        "hasOutcome": [
+          "OUT-R1-PASS"
+        ]
+      },
+      "where": "§2",
+      "quote": "Render the documents"
+    },
+    {
+      "type": "Outcome",
+      "id": "OUT-R1-PASS",
+      "label": "pass",
+      "fields": {
+        "outcomeName": "pass"
+      },
+      "where": "§1",
+      "quote": "pass"
+    },
+    {
+      "type": "DeterministicStep",
+      "id": "R2",
+      "label": "Verify the documents",
+      "summary": "Every field read from its column; no unmapped field.",
+      "fields": {
+        "stepId": "R2_verify",
+        "command": "python {skill_dir}/steps/verify.py --run-dir {run_dir}",
+        "isImplemented": false,
+        "sourceRef": "flow.json#/nodes/R2_verify"
+      },
+      "links": {
+        "inPhase": [
+          "PH-RUN"
+        ],
+        "reads": [
+          "ART-DOCS",
+          "ART-DATA"
+        ],
+        "writes": [
+          "ART-VERIFY"
+        ],
+        "records": [
+          "MET-UNMAPPED"
+        ],
+        "hasCheck": [
+          "CHK-UNMAPPED"
+        ],
+        "hasOutcome": [
+          "OUT-R2-PASS",
+          "OUT-R2-FAIL"
+        ]
+      },
+      "where": "§3",
+      "quote": "A production release is refused while a field is unmapped."
+    },
+    {
+      "type": "Metric",
+      "id": "MET-UNMAPPED",
+      "label": "unmapped_fields",
+      "fields": {
+        "metricName": "unmapped_fields"
+      },
+      "where": "§1",
+      "quote": "unmapped_fields"
+    },
+    {
+      "type": "Check",
+      "id": "CHK-UNMAPPED",
+      "label": "no_unmapped_fields",
+      "summary": "No field of a document is unmapped.",
+      "fields": {
+        "checkId": "no_unmapped_fields",
+        "checkKind": "metric",
+        "expression": "metrics.unmapped_fields <= config.max_unmapped_fields",
+        "blocking": "true"
+      },
+      "links": {
+        "measures": [
+          "MET-UNMAPPED"
+        ],
+        "comparedTo": [
+          "CFG-MAX-UNMAPPED"
+        ],
+        "onFail": [
+          "OUT-R2-FAIL"
+        ]
+      },
+      "where": "§3",
+      "quote": "no_unmapped_fields"
+    },
+    {
+      "type": "Outcome",
+      "id": "OUT-R2-PASS",
+      "label": "pass",
+      "fields": {
+        "outcomeName": "pass"
+      },
+      "where": "§1",
+      "quote": "pass"
+    },
+    {
+      "type": "Outcome",
+      "id": "OUT-R2-FAIL",
+      "label": "fail",
+      "fields": {
+        "outcomeName": "fail"
+      },
+      "where": "§1",
+      "quote": "fail"
+    },
+    {
+      "type": "DeterministicStep",
+      "id": "R3",
+      "label": "Publish",
+      "summary": "Delivers the documents to the client portal and keeps them seven years.",
+      "fields": {
+        "stepId": "R3_publish",
+        "command": "python {skill_dir}/steps/publish.py --run-dir {run_dir}",
+        "isImplemented": false,
+        "sourceRef": "flow.json#/nodes/R3_publish"
+      },
+      "links": {
+        "inPhase": [
+          "PH-RUN"
+        ],
+        "reads": [
+          "ART-DOCS",
+          "ART-VERIFY"
+        ],
+        "usesParameter": [
+          "CFG-DEADLINE-H"
+        ],
+        "hasOutcome": [
+          "OUT-R3-PASS"
+        ]
+      },
+      "where": "§4",
+      "quote": "Publish"
+    },
+    {
+      "type": "Outcome",
+      "id": "OUT-R3-PASS",
+      "label": "pass",
+      "fields": {
+        "outcomeName": "pass"
+      },
+      "where": "§1",
+      "quote": "pass"
+    },
+    {
+      "type": "TerminalStep",
+      "id": "END-OK",
+      "label": "Batch published",
+      "fields": {
+        "stepId": "END_published",
+        "sourceRef": "flow.json#/nodes/END_published"
+      },
+      "links": {
+        "inPhase": [
+          "PH-RUN"
+        ]
+      },
+      "where": "§1",
+      "quote": "Batch published"
+    },
+    {
+      "type": "TerminalStep",
+      "id": "END-REJECTED",
+      "label": "Batch rejected",
+      "fields": {
+        "stepId": "END_rejected",
+        "sourceRef": "flow.json#/nodes/END_rejected"
+      },
+      "links": {
+        "inPhase": [
+          "PH-RUN"
+        ]
+      },
+      "where": "§1",
+      "quote": "Batch rejected"
+    },
+    {
+      "type": "Transition",
+      "id": "T1",
+      "label": "R0 pass -> R1",
+      "fields": {
+        "priority": 0,
+        "sourceRef": "flow.json#/edges/t1"
+      },
+      "links": {
+        "from": [
+          "R0"
+        ],
+        "onOutcome": [
+          "OUT-R0-PASS"
+        ],
+        "to": [
+          "R1"
+        ]
+      },
+      "where": "§1",
+      "quote": "R0 pass -> R1"
+    },
+    {
+      "type": "Transition",
+      "id": "T2",
+      "label": "R1 pass -> R2",
+      "fields": {
+        "priority": 0,
+        "sourceRef": "flow.json#/edges/t2"
+      },
+      "links": {
+        "from": [
+          "R1"
+        ],
+        "onOutcome": [
+          "OUT-R1-PASS"
+        ],
+        "to": [
+          "R2"
+        ]
+      },
+      "where": "§1",
+      "quote": "R1 pass -> R2"
+    },
+    {
+      "type": "Transition",
+      "id": "T3",
+      "label": "R2 pass -> R3",
+      "fields": {
+        "priority": 0,
+        "sourceRef": "flow.json#/edges/t3"
+      },
+      "links": {
+        "from": [
+          "R2"
+        ],
+        "onOutcome": [
+          "OUT-R2-PASS"
+        ],
+        "to": [
+          "R3"
+        ]
+      },
+      "where": "§1",
+      "quote": "R2 pass -> R3"
+    },
+    {
+      "type": "Transition",
+      "id": "T4",
+      "label": "R2 fail -> rejected",
+      "fields": {
+        "priority": 0,
+        "sourceRef": "flow.json#/edges/t4"
+      },
+      "links": {
+        "from": [
+          "R2"
+        ],
+        "onOutcome": [
+          "OUT-R2-FAIL"
+        ],
+        "to": [
+          "END-REJECTED"
+        ]
+      },
+      "where": "§1",
+      "quote": "R2 fail -> rejected"
+    },
+    {
+      "type": "Transition",
+      "id": "T5",
+      "label": "R3 pass -> published",
+      "fields": {
+        "priority": 0,
+        "sourceRef": "flow.json#/edges/t5"
+      },
+      "links": {
+        "from": [
+          "R3"
+        ],
+        "onOutcome": [
+          "OUT-R3-PASS"
+        ],
+        "to": [
+          "END-OK"
+        ]
+      },
+      "where": "§1",
+      "quote": "R3 pass -> published"
+    }
+  ]
+}

@@ -1,8 +1,9 @@
-"""Scenes 1 to 4 of the arc, scripted on the report application against the OTO release this
+"""Scenes 1 to 5 of the arc, scripted on the report application against the OTO release this
 plugin pins: the project (scene 1), a capture of the report product's obligations through the
 gates and the questions the graph then answers (scene 2), what scene 3 derives from (the
-specification as facts), and the design captured against `ddd` and traced to the specification
-(scene 4, its design half; the flow half waits for the `flow` pack). Needs the engine importable (`OTO_HOME`, or `oto-kg` installed)
+specification as facts), the design captured against `ddd` and traced to the specification and
+the flow captured against `flow` (scene 4), and the implementing agent's brief: BLOCKED by name
+until the missing fact is captured, then READY (scene 5). Needs the engine importable (`OTO_HOME`, or `oto-kg` installed)
 and the `product` and `product-report` packs on the machine (`oto ontology list`)."""
 import json
 import os
@@ -20,13 +21,29 @@ if (OTO / "oto" / "__init__.py").exists() and str(OTO) not in sys.path:
 try:
     import oto  # noqa: F401
     from oto.model import ontologies
-    HAVE = all(ontologies.dir_for(name) is not None for name in ("product", "product-report", "ddd"))
+    HAVE = all(ontologies.dir_for(name) is not None for name in ("product", "product-report", "ddd", "flow"))
 except ImportError:
     HAVE = False
 pytestmark = pytest.mark.skipif(not HAVE, reason="OTO and the product, product-report packs are needed")
 
 CAPTURE = ROOT / "fixtures" / "capture-report-product-spec.json"
 DESIGN = ROOT / "fixtures" / "capture-report-design.json"
+FLOW = ROOT / "fixtures" / "capture-report-flow.json"
+FLOW_FIELDS = ROOT / "fixtures" / "capture-report-flow-fields.json"
+
+
+def _captured(root, *captures):
+    """Propose, add and apply each capture in turn, through the gates; then build."""
+    for capture in captures:
+        code, out = oto_cli("curate", "propose", "--project", root, "--from", str(capture))
+        assert code == 0 and "unresolved" not in out, out
+        doc = json.load(open(capture, encoding="utf-8"))["doc"]
+        code, out = oto_cli("curate", "add", "--project", root, "--from", os.path.join(root, "proposals", doc + ".json"))
+        assert code == 0, out
+    code, out = oto_cli("curate", "check", "--project", root)
+    assert code == 0 and "ready to apply" in out, out
+    assert oto_cli("curate", "apply", "--project", root, "--by", "the scene test", "--note", "captured")[0] == 0
+    assert oto_cli("build", "--project", root)[0] == 0
 
 
 def oto_cli(*args, cwd=None):
@@ -130,3 +147,31 @@ def test_scene_4_the_design_is_captured_against_ddd_and_traced_to_the_specificat
         assert code == 0 and "Keep every accepted revision" in out and "Report analyst" in out, out
         code, out = oto_cli("query", "--project", root, "entity", "boundedcontext.fund-report.bc-def")
         assert code == 0 and "deployed as → Definition service" in out, out
+
+
+def test_scene_4_the_flow_is_captured_against_flow_and_scene_5_the_agent_is_blocked_by_name_then_ready():
+    with tempfile.TemporaryDirectory() as root:
+        assert oto_cli("init", "--name", "Fund report automation", "--slug", "funds", "--ontology", "product-report,ddd,flow", "--empty", "--project", root)[0] == 0
+        assert oto_cli("curate", "start", "--project", root)[0] == 0
+        _captured(root, CAPTURE, DESIGN, FLOW)
+        # scene 4, the flow half: the production run as steps, checks, transitions and artifacts
+        code, out = oto_cli("query", "--project", root, "questions")
+        assert code == 0, out
+        for qid in ("FL1", "FL4", "FL11", "FL13"):
+            line = next(l for l in out.splitlines() if l.startswith(qid + " "))
+            assert "answered" in line, line
+        # scene 5: the implementing agent asks its brief first, and is BLOCKED by name
+        code, out = oto_cli("query", "--project", root, "brief", "implement-step")
+        assert code == 0 and "deterministicstep.fund-report.r2         BLOCKED FL3" in out and "3 READY, 1 BLOCKED" in out, out
+        code, out = oto_cli("query", "--project", root, "brief", "implement-step", "STEP=deterministicstep.fund-report.r2")
+        assert code == 0 and "->  READY" not in out and "blocked on: FL3" in out and "JSON output has no field specification" in out, out
+        assert "x FL3 REQ" in out and "+ FL4 REQ" in out and "[1 fact(s)]" in out
+        code, out = oto_cli("query", "--project", root, "brief", "write-tests", "STEP=deterministicstep.fund-report.r2")
+        assert code == 0 and "->  READY" in out and "+ FL12 REQ" in out, "the tests can be written before the implementation: " + out
+        # the person captures the missing fact; the same artifact, now with its fields, goes through the gates
+        assert oto_cli("curate", "start", "--project", root)[0] == 0
+        _captured(root, FLOW_FIELDS)
+        code, out = oto_cli("query", "--project", root, "brief", "implement-step", "STEP=deterministicstep.fund-report.r2")
+        assert code == 0 and "->  READY" in out and "+ FL3 REQ" in out and "[2 fact(s)]" in out, out
+        code, out = oto_cli("query", "--project", root, "brief", "impact-parameter", "PARAM=configparameter.fund-report.cfg-max-unmapped")
+        assert code == 0 and "->  READY" in out and "[1 fact(s)]" in out, "the check compared to it: " + out

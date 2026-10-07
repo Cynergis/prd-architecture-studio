@@ -1,0 +1,49 @@
+{
+  "doc": "report-product-flow-fields",
+  "as_of": "2026-10-07",
+  "scope": "fund-report",
+  "items": [
+    {
+      "type": "Artifact",
+      "id": "ART-VERIFY",
+      "label": "verify_report",
+      "summary": "Which documents passed verification, and which fields failed.",
+      "fields": {
+        "path": "{run_dir}/verify_report.json",
+        "format": "json",
+        "carries": [
+          "VerificationResult"
+        ],
+        "sourceRef": "flow.json#/artifacts/verify_report"
+      },
+      "links": {
+        "hasArtifactField": [
+          "FLD-VERIFY-DOC",
+          "FLD-VERIFY-FAILED"
+        ]
+      },
+      "where": "§3",
+      "quote": "verify_report"
+    },
+    {
+      "type": "ArtifactField",
+      "id": "FLD-VERIFY-DOC",
+      "label": "documents[].document_id",
+      "fields": {
+        "fieldPath": "documents[].document_id"
+      },
+      "where": "§3",
+      "quote": "documents[].document_id"
+    },
+    {
+      "type": "ArtifactField",
+      "id": "FLD-VERIFY-FAILED",
+      "label": "documents[].failed_fields[]",
+      "fields": {
+        "fieldPath": "documents[].failed_fields[]"
+      },
+      "where": "§3",
+      "quote": "documents[].failed_fields[]"
+    }
+  ]
+}
