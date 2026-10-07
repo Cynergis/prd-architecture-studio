@@ -1,9 +1,25 @@
 {
   "name": "prd-architecture-studio",
-  "version": "0.7.0",
-  "description": "BMAD-inspired skills that drive the buildup of a Product Requirements Document and an Architecture & Design document, generate a navigable, traceable HTML site, and distill a validated product into a typed knowledge graph that feeds an organization knowledge mesh.",
+  "version": "2.0.0",
+  "description": "Atlas, the Lead Product Engineer, and the studio's skills, version 2: capture a product's specification and design against OTO packs, contribute every confirmed section to the knowledge base through the curate gates, derive what the product must know, publish, and hand readers their install line. Depends on the oto plugin.",
   "author": {
     "name": "chiheb"
   },
-  "keywords": ["bmad", "prd", "architecture", "ddd", "requirements", "documentation", "knowledge-graph", "ontology"]
+  "keywords": [
+    "prd",
+    "architecture",
+    "ddd",
+    "requirements",
+    "knowledge-graph",
+    "ontology",
+    "oto",
+    "atlas"
+  ],
+  "dependencies": [
+    "oto"
+  ],
+  "oto": {
+    "release": "0.8.3",
+    "packs": ["product", "product-report"]
+  }
 }

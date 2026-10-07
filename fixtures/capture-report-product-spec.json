@@ -1,0 +1,168 @@
+{
+  "doc": "report-product-brief",
+  "as_of": "2026-10-07",
+  "scope": "fund-report",
+  "items": [
+    {
+      "type": "Product",
+      "id": "PRODUCT",
+      "label": "Fund report automation",
+      "summary": "Produces regulated fund documents from a sample PDF and finished data, under the analyst's definition.",
+      "fields": {
+        "stage": "specified",
+        "problem": "Fund documents are produced by hand from spreadsheets, late and inconsistently.",
+        "vision": "Every fund document produced from its definition, on schedule, reproducible, in both languages."
+      },
+      "where": "§1",
+      "quote": "Every fund document produced from its definition, on schedule, reproducible, in both languages.",
+      "links": {
+        "offers": [
+          "VP1"
+        ],
+        "owned_by": [
+          "ROLE-ANALYST"
+        ]
+      }
+    },
+    {
+      "type": "Persona",
+      "id": "P1",
+      "label": "Report analyst",
+      "fields": {
+        "relationship": "target",
+        "need": "define a report type once and trust what is produced from it"
+      },
+      "where": "§2",
+      "quote": "The analyst defines the report type once and verifies its mapping."
+    },
+    {
+      "type": "ValueProposition",
+      "id": "VP1",
+      "label": "Documents produced from a verified definition",
+      "fields": {
+        "promise": "what the document shows is what the analyst defined and verified",
+        "differentiator": "the definition is the product, not the template"
+      },
+      "links": {
+        "intended_for": [
+          "P1"
+        ]
+      },
+      "where": "§1",
+      "quote": "The definition is the product, not the template."
+    },
+    {
+      "type": "Requirement",
+      "id": "FR1",
+      "label": "Produce the fund profile monthly, in English and French, as PDF",
+      "fields": {
+        "kind": "functional",
+        "priority": "must",
+        "concerns": "identity"
+      },
+      "links": {
+        "serves": [
+          "VP1"
+        ],
+        "governs": [
+          "report.fund-profile-balanced"
+        ]
+      },
+      "where": "§3.1",
+      "quote": "The fund profile is produced monthly, in English and French, as PDF."
+    },
+    {
+      "type": "Requirement",
+      "id": "FR2",
+      "label": "Read every value from a finished column of the report's table; never compute",
+      "fields": {
+        "kind": "functional",
+        "priority": "must",
+        "concerns": "data"
+      },
+      "links": {
+        "serves": [
+          "VP1"
+        ],
+        "governs": [
+          "report.fund-profile-balanced"
+        ]
+      },
+      "where": "§3.2",
+      "quote": "The product reads finished columns; it never computes."
+    },
+    {
+      "type": "Requirement",
+      "id": "FR3",
+      "label": "Keep every accepted revision of a report type's definition, with who and why",
+      "fields": {
+        "kind": "functional",
+        "priority": "must",
+        "concerns": "audit"
+      },
+      "links": {
+        "serves": [
+          "VP1"
+        ],
+        "governs": [
+          "report.fund-profile-balanced"
+        ]
+      },
+      "where": "§3.6",
+      "quote": "Every accepted revision is kept, with who accepted it and why."
+    },
+    {
+      "type": "Requirement",
+      "id": "FR4",
+      "label": "Refuse a production release while a field is unmapped",
+      "fields": {
+        "kind": "functional",
+        "priority": "should",
+        "concerns": "readiness"
+      },
+      "links": {
+        "serves": [
+          "VP1"
+        ],
+        "governs": [
+          "report.fund-profile-balanced"
+        ]
+      },
+      "where": "§3.7",
+      "quote": "A production release is refused while a field is unmapped."
+    },
+    {
+      "type": "Policy",
+      "id": "POL1",
+      "label": "Every fund profile carries the regulatory disclaimer, signed off by compliance",
+      "fields": {
+        "kind": "compliance",
+        "authority": "securities regulator",
+        "concerns": "compliance"
+      },
+      "links": {
+        "governs": [
+          "report.fund-profile-balanced"
+        ],
+        "applies_to": [
+          "PRODUCT"
+        ]
+      },
+      "where": "§4",
+      "quote": "Compliance signs off every published document."
+    },
+    {
+      "type": "Role",
+      "id": "ROLE-ANALYST",
+      "label": "Report analyst",
+      "fields": {
+        "kind": "owner",
+        "holder": "the report analyst on duty",
+        "mandate": "Define report types and verify their data mapping.",
+        "verifies": "definition"
+      },
+      "where": "§2",
+      "quote": "The analyst owns the definition."
+    }
+  ]
+}
