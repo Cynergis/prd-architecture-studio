@@ -10,8 +10,8 @@ Is there already a pack? Yes. The levels the arc needs all exist and are plugins
 
 | Plugin | What it is | Marketplace |
 | --- | --- | --- |
-| `oto` | the engine: the `kg_*` tools, the generic skills, the session hook; ships `portfolio`, `product`, `software-architecture`, `ddd`, `work` | `cynergis-engine` (the checkout) → `Cynergis/oto` once pushed |
-| `prd-architecture-studio` | Atlas and the studio's skills: capture, prd-build, architecture-build, feature-flow, prd-site | `cynergis-studio` (the checkout) |
+| `oto` | the engine: the `kg_*` tools, the generic skills, the session hook; ships `portfolio`, `product`, `software-architecture`, `ddd`, `work` | `cynergis-local` (a copy of the checkout) → `Cynergis/oto` once pushed |
+| `prd-architecture-studio` | Atlas and the studio's skills: capture, prd-build, architecture-build, feature-flow, prd-site | `cynergis-local` (a copy of the checkout) |
 | `report` | the report domain: a report type, its sections, fields, columns, policies, lifecycle; skills **new-report**, **ask-reports**, start | `cynergis-local` (the local registry) → `Cynergis/oto-registry` once pushed |
 | `product-report` | what a _report_ product's specification must say (RP1–RP10) | same |
 | `flow` | steps, checks, transitions, artifacts; the briefs; skill **implement-step** | same |
@@ -24,39 +24,42 @@ Nothing to build. What you bring is your product's brief and your report type's 
 
 ## 1\. Install
 
-Until the branch is pushed, the engine and the studio come from their checkouts and the packs  
-from a local registry on this machine. Once pushed, the same four lines point at GitHub.
+One marketplace holds everything until the branch is pushed: `~/Downloads/oto-marketplace` is the
+local registry of packs with **copies** of the engine and the studio checkouts beside them
+(`plugins/oto`, `plugins/prd-architecture-studio`), because a plugin's dependency on `oto` is
+resolved inside the plugin's own marketplace and a marketplace source must live inside the
+marketplace. `~/Downloads/oto-marketplace/refresh.sh` re-copies after a commit in either
+checkout; then `/plugin update oto@cynergis-local` (or the studio). Once pushed, the published
+marketplace `Cynergis/oto-registry` lists the same plugins from GitHub.
 
-```
-# 1. the engine from the checkout (the plugin's MCP server and hook read this; unset it after the push)
+```bash
+# the engine plugin's MCP server and session hook run the checkout while this is set (unset after the push)
 echo 'export OTO_SOURCE=$HOME/Downloads/oto' >> ~/.zshrc && source ~/.zshrc
-# a command-line oto too, for the lines below
-alias oto='uvx --from "$OTO_SOURCE" oto'         # or: python3 -m venv ~/oto-venv && ~/oto-venv/bin/pip install -e "$OTO_SOURCE[rdf]"
-oto version
+alias oto='uvx --from "$OTO_SOURCE" oto'         # a command-line oto; or a venv: pip install -e "$OTO_SOURCE[rdf]"
+oto version                                      # oto 0.11.0
 ```
 
-In Claude Code (any folder), in this order:
+In Claude Code, from any folder, at **user** scope so every project sees them:
 
-```
-/plugin marketplace add ~/Downloads/oto                     # cynergis-engine        (later: Cynergis/oto)
-/plugin marketplace add ~/Downloads/prd-architecture-studio # cynergis-studio        (later: Cynergis/prd-architecture-studio)
-/plugin marketplace add ~/Downloads/oto-marketplace         # cynergis-local         (later: Cynergis/oto-registry)
-/plugin install oto@cynergis-engine
-/plugin install prd-architecture-studio@cynergis-studio
+```text
+/plugin marketplace add ~/Downloads/oto-marketplace     # cynergis-local  (later: Cynergis/oto-registry)
+/plugin install oto@cynergis-local
+/plugin install prd-architecture-studio@cynergis-local
 /plugin install report@cynergis-local
 /plugin install product-report@cynergis-local
 /plugin install flow@cynergis-local
 /plugin install work@cynergis-local
 ```
 
-Then `/plugin` → Installed: eight plugins (the seven above and `pdf-to-template@local-report-tools`).  
-Remove the old `oto@cynergis` (0.6.1) so one engine answers: `/plugin uninstall oto@cynergis`.
+or on the command line: `for p in oto prd-architecture-studio report product-report flow work; do
+claude plugin install $p@cynergis-local --scope user -y; done`. Then `/plugin` → Installed: the six,
+all enabled, plus `pdf-to-template@local-report-tools` (keep it: the template build). If an older
+`oto@cynergis` (0.6.1) is still installed, uninstall it so one engine answers; `claude plugin list`
+shows what is where.
 
-The packs also install their ontologies for the command line: `oto pack list`, and  
-`oto registry add ~/Downloads/oto-registry-local.git` then `oto pack add report` if a pack is  
-missing from `oto ontology list`.
-
----
+The packs also install their ontologies for the command line (`oto pack list`; `oto registry add
+~/Downloads/oto-registry-local.git` then `oto pack add report` if one is missing from `oto ontology
+list`).
 
 ## 2\. Discover
 
