@@ -1,256 +1,221 @@
-# Walkthrough — from an empty folder to a specified, designed, flowed and buildable report product
+# Walkthrough — marketplaces, plugins, discovery, then the report and its code
 
-What this proves, on your own machine, in one sitting: the whole arc of the studio on OTO, for a  
-report generation tool. You end up with one knowledge base that holds the **product**  
-**specification** (what the tool must do), the **report definition** (what one report type is: its  
-sections, fields, where each value comes from), the **design** (contexts, aggregates, components)  
-and the **flow** (the steps that build and run it) — and an implementing agent that asks the graph  
-for its brief and is blocked by name when a fact is missing.
+Everything below happens in Claude Code with plugins and your agents; the terminal lines are what
+the agents run and what you can run yourself to check them. Three parts: **install** (the
+marketplaces and plugins), **discover** (what is there and what it does for you), **do** (define
+a report as the analyst, then generate its template and the code of the flow that builds and runs
+it).
 
-**Is there a pack to build first? No.** Every pack the arc needs exists:
+Is there already a pack? Yes. The levels the arc needs all exist and are plugins now:
 
-| Level | Pack | Where it is today |
-| --- | --- | --- |
-| portfolio | `portfolio` | ships with the engine |
-| product | `product` | ships with the engine |
-| product type | `product-report` @3 | `~/.oto/ontologies` (publish it to the registry when you push D1) |
-| domain | `report` @5 | `~/.oto/ontologies` |
-| design | `software-architecture`, `ddd` | ship with the engine |
-| flow | `flow` @1 | installed from `~/Downloads/report-ontology` (`oto ontology add <checkout> --path oto/flow`) |
-| plan | `work` | ships with the engine |
+| Plugin | What it is | Marketplace |
+|---|---|---|
+| `oto` | the engine: the `kg_*` tools, the generic skills, the session hook; ships `portfolio`, `product`, `software-architecture`, `ddd`, `work` | `cynergis-engine` (the checkout) → `Cynergis/oto` once pushed |
+| `prd-architecture-studio` | Atlas and the studio's skills: capture, prd-build, architecture-build, feature-flow, prd-site | `cynergis-studio` (the checkout) |
+| `report` | the report domain: a report type, its sections, fields, columns, policies, lifecycle; skills **new-report**, **ask-reports**, start | `cynergis-local` (the local registry) → `Cynergis/oto-registry` once pushed |
+| `product-report` | what a *report* product's specification must say (RP1–RP10) | same |
+| `flow` | steps, checks, transitions, artifacts; the briefs; skill **implement-step** | same |
+| `work` | work items and milestones; what slips if a component is late | same |
+| `pdf-to-template` (the plugin you already have, `local-report-tools`) | the sample PDF → an HTML/CSS + Jinja2 template; keep it: it is the template build | `local-report-tools` |
 
-What you bring is **data**, not a pack: your product's brief and your report type's definition.  
-A new pack is only needed for a new _kind_ of product (a second `product-<type>`).
-
-There are two ways through. Do the dry run first (ten minutes, nothing to think about), then the  
-real one with Atlas.
+Nothing to build. What you bring is your product's brief and your report type's definition.
 
 ---
 
-## 0\. Setup (once)
+## 1. Install
 
-```
-# the engine, from the checkout (the published plugin is older than this branch)
-python3 -m venv ~/oto-venv && ~/oto-venv/bin/pip install -e "$HOME/Downloads/oto[rdf]"
-export PATH="$HOME/oto-venv/bin:$PATH"
-oto --version                                  # 0.11.0
+Until the branch is pushed, the engine and the studio come from their checkouts and the packs
+from a local registry on this machine. Once pushed, the same four lines point at GitHub.
 
-# the packs on this machine
-oto ontology list                               # product, portfolio, software-architecture, ddd, work (built-in);
-                                                # product-report @3, report @5, flow @1 (yours)
-oto ontology add ~/Downloads/report-ontology --path oto/flow   # only if flow is missing
-oto ontology list --product-types               # report  product-report  (what Atlas's first question reads)
+```bash
+# 1. the engine from the checkout (the plugin's MCP server and hook read this; unset it after the push)
+echo 'export OTO_SOURCE=$HOME/Downloads/oto' >> ~/.zshrc && source ~/.zshrc
+# a command-line oto too, for the lines below
+alias oto='uvx --from "$OTO_SOURCE" oto'         # or: python3 -m venv ~/oto-venv && ~/oto-venv/bin/pip install -e "$OTO_SOURCE[rdf]"
+oto version
 ```
 
-Each `oto ontology show <name>` must end with `self-check: clean`.
+In Claude Code (any folder), in this order:
+
+```text
+/plugin marketplace add ~/Downloads/oto                     # cynergis-engine        (later: Cynergis/oto)
+/plugin marketplace add ~/Downloads/prd-architecture-studio # cynergis-studio        (later: Cynergis/prd-architecture-studio)
+/plugin marketplace add ~/Downloads/oto-marketplace         # cynergis-local         (later: Cynergis/oto-registry)
+/plugin install oto@cynergis-engine
+/plugin install prd-architecture-studio@cynergis-studio
+/plugin install report@cynergis-local
+/plugin install product-report@cynergis-local
+/plugin install flow@cynergis-local
+/plugin install work@cynergis-local
+```
+
+Then `/plugin` → Installed: eight plugins (the seven above and `pdf-to-template@local-report-tools`).
+Remove the old `oto@cynergis` (0.6.1) so one engine answers: `/plugin uninstall oto@cynergis`.
+
+The packs also install their ontologies for the command line: `oto pack list`, and
+`oto registry add ~/Downloads/oto-registry-local.git` then `oto pack add report` if a pack is
+missing from `oto ontology list`.
 
 ---
 
-## 1\. The dry run: the scripted arc (CLI only)
+## 2. Discover
 
-The scene tests of this plugin, by hand. The captures are the plugin's fixtures (a fund report  
-product); nothing is typed, every gate is real.
+Start Claude Code in a new folder, say nothing yet, and ask these in turn. Each has an agent
+that answers from the engine, and a line you can run to see the same thing.
 
+**What plugins and packs are there, and what can they do for me?**
+`/oto:concierge` — the guide: where you are, what the choices are, which skill to load next.
+The skills by plugin:
+- `oto:` start, concierge, curate, query-knowledge, ontology-interview, build-knowledge-base, capture, act, evaluate, vet-provenance, spec;
+- `prd-architecture-studio:` atlas, studio, capture, prd-build, architecture-build, feature-flow, prd-site;
+- `report:` new-report, ask-reports, start; `flow:` implement-step, start; `product-report:` start; `work:` start.
+
+```bash
+oto ontology list                        # every ontology on the machine, by domain, with what it extends
+oto ontology list --product-types        # report  product-report: the kinds of product Atlas can start
+oto ontology show report                 # a pack in full: classes, questions, rules, the sample, self-check
 ```
-STUDIO=~/Downloads/prd-architecture-studio
-mkdir -p ~/funds && cd ~/funds
 
-# scene 1 — the project, empty: the graph holds what your people say, never a pack's example
-oto init --name "Fund report automation" --slug funds --ontology product-report,ddd,flow,work --empty
-oto status
-oto ontology capture                            # capture.json: what the packs ask, by whom, with which items
+**What is a report, here?** `/report:ask-reports` on a catalogue. Make the demo catalogue first:
 
-# scene 2 — the specification through the gates
-oto curate start
-oto curate propose --from $STUDIO/fixtures/capture-report-product-spec.json
-oto curate add --from proposals/report-product-brief.json --dry-run
-oto curate add --from proposals/report-product-brief.json
-oto curate check                                # blocking: none; gaps: the open questions, named
-oto curate apply --by "you" --note "the product's obligations"
+```bash
+mkdir -p ~/explore && cd ~/explore
+oto init --name "Report catalogue" --slug catalogue --pack report     # the pack's sample: the fund profile (balanced)
 oto build
-oto query questions                             # PR*/RP* answered; the report domain's Q* open: scene 3's work
-oto query ask RP2 REPORTTYPE=reporttype.fund-report.rt-fpb
-
-# scene 4 — the design and the flow, the same way
-oto curate start
-oto curate propose --from $STUDIO/fixtures/capture-report-design.json
-oto curate add --from proposals/report-product-design.json
-oto curate propose --from $STUDIO/fixtures/capture-report-flow.json
-oto curate add --from proposals/report-product-flow.json
-oto curate check && oto curate apply --by "you" --note "design and flow" && oto build
-oto query ask SA17                              # clean: every obligation is satisfied by something in the design
-oto query ask WK5 COMPONENT=component.fund-report.cmp-render   # what slips if the render job is late
-
-# scene 5 — the implementing agent's brief
-oto query brief implement-step                  # r0 READY, r1 READY, r2 BLOCKED FL3, r3 READY
-oto query brief implement-step STEP=deterministicstep.fund-report.r2   # blocked on FL3: the verify report has no field spec
-oto curate start
-oto curate propose --from $STUDIO/fixtures/capture-report-flow-fields.json
-oto curate add --from proposals/report-product-flow-fields.json
-oto curate check && oto curate apply --by "you" --note "the verify report's fields" && oto build
-oto query brief implement-step STEP=deterministicstep.fund-report.r2   # READY
-oto query brief write-tests STEP=deterministicstep.fund-report.r2      # the tests to write first (FL12)
-
-# scene 6 — the site, from the graph; the product's knowledge published as a store
-oto build --target site --view $STUDIO/views/prd-site
-open build/site/index.html                      # or: oto serve --http 8080 --view $STUDIO/views/prd-site
-git init --bare -b main /tmp/funds-kg.git
-oto publish --repo /tmp/funds-kg.git --site
-
-# scene 7 — a reader with nothing but the store
-oto sync --repo /tmp/funds-kg.git --dest /tmp/reader-kg
-oto query --project /tmp/reader-kg ask RP2 REPORTTYPE=reporttype.fund-report.rt-fpb
-oto query --project /tmp/reader-kg brief implement-step
 ```
 
-If every line above behaves as its comment says, the machinery is sound. Delete `~/funds` and do  
-it for real.
+then ask the agent: *"what reports do we have?"* (Q1), *"what does the fund profile show, section by
+section?"* (Q7), *"where does each field come from?"* (Q4, Q5), *"when does it run and where do
+the documents go?"* (Q11, Q10), *"what does lineage status mean?"* (`kg_define`). Every answer
+names its question and the fact's source; a gap is said, never filled.
+
+```bash
+oto query questions                      # the 26 questions of the report ontology and whether this catalogue answers each
+oto query ask Q7 REPORT=report.fund-profile-balanced
+oto query define ReportType
+```
+
+**How do I get started on my own report?** `/report:new-report` — the analyst's interview, below.
+
+**What are the flows, and what will they produce?** Two flows exist as facts:
+
+- the `flow` pack's own sample (three steps: extract, review, done) — `oto init --pack flow`;
+- the **pdf-to-template flow**: the real 30-step process that builds a template from a sample PDF
+  and runs production batches, ported as a project graph:
+
+```bash
+mkdir -p ~/explore-flow && cd ~/explore-flow
+oto init --name "pdf-to-template" --slug ptt --ontology flow,report --empty
+cp ~/Downloads/report-ontology/fixtures/pdf-to-template/graph.json graph.json && oto build
+oto query ask FL18 STEP=step.b10_verify      # which phase, where it starts
+oto query ask FL13                            # what the engine must expose to guards
+oto query brief implement-step                # readiness: 8 READY, 10 BLOCKED FL3 (no field spec on their JSON output)
+oto query brief implement-step STEP=step.b10_verify   # every fact the verify script needs
+oto query brief impact-parameter PARAM=param.ssim_region_min_vector   # what a threshold change reaches
+```
+
+What the flows produce: the template build phase ends with a frozen `TemplateRelease` (the
+template, its sample, its thresholds, who signed it off); the production run ends with a published
+batch of documents. What the *tools* produce for you: a knowledge base you can ask (the graph, its
+store, its site), a report definition the catalogue holds, a template (the `pdf-to-template`
+skill), and step scripts written from their brief (`flow:implement-step`).
 
 ---
 
-## 2\. The real run: Atlas, on your report generation tool
+## 3. Do: define a report as the analyst, then generate its template and its code
 
-### 2.1 Wire Claude Code to the checkout
+### 3.1 The project
 
-Open Claude Code in a fresh project folder. Until the plugins are published from this branch,  
-give the folder the skills and the tools directly:
-
-```
+```bash
 mkdir -p ~/my-reports && cd ~/my-reports
-oto init --name "<your product's name>" --slug reports --ontology product-report,ddd,flow,work --empty
-
-# the kg_* tools, from the checkout's engine
-cat > .mcp.json <<EOF
-{"mcpServers": {"reports-kg": {"command": "$HOME/oto-venv/bin/oto", "args": ["serve", "--project", "."]}}}
-EOF
-
-# the skills: the studio's seven and OTO's ten (OTO's `capture` under another name: the studio has one too)
-mkdir -p .claude/skills
-for s in atlas capture prd-build architecture-build feature-flow prd-site studio; do
-  ln -s ~/Downloads/prd-architecture-studio/skills/$s .claude/skills/$s; done
-for s in start concierge curate query-knowledge ontology-interview build-knowledge-base act evaluate vet-provenance spec; do
-  ln -s ~/Downloads/oto/skills/$s .claude/skills/$s; done
-ln -s ~/Downloads/oto/skills/capture .claude/skills/oto-capture
+oto init --name "<your product>" --slug reports --ontology product-report,ddd,flow,work --empty
 ```
 
-In the studio skills, read `${CLAUDE_PLUGIN_ROOT}` as `~/Downloads/prd-architecture-studio`  
-(the site view is `~/Downloads/prd-architecture-studio/views/prd-site`).
+`--empty`: the graph holds what your people say, never a pack's example. The product-report
+pack brings `product`, `portfolio` and `report` with it. Start Claude Code here; the session hook
+prints `oto status`.
 
-Start Claude Code in the folder and say: **"Atlas, lead this product."** Atlas orients with  
-`oto status` and shows the menu. From here you are the domain expert; Atlas asks, you answer,  
-every confirmed section goes through the gates. What follows is what to expect at each scene and  
-what you bring to it.
+### 3.2 Define the report type — `/report:new-report`
 
-### 2.2 Scene 1 — Start
+You are the report analyst. Bring one real report: its sample PDF, the warehouse table and its
+columns, what identifies a document (fund, series, as-of, language). The agent reads
+`capture.json` (the form: the ontology's questions by who asks them), asks in groups — what the
+report is; what identifies a document; where the data comes from; how it runs and where documents
+go; rules, verification and approval — drafts the sections and fields from the PDF for you to
+correct, proposes a column per field for you to verify, and after every group runs the gates:
 
-Atlas asks which kind of product (`oto registry list --product-types` → `report`) and what you  
-have. You have a brief. If you want one to start from, this is the fund report product the dry run  
-used, in prose:
+```bash
+oto curate propose --from captures/<report>-<group>.json
+oto curate add --from proposals/<doc>.json && oto curate check && oto curate apply --by "<you>"
+oto build && oto query questions
+```
 
-> We produce regulated fund documents (monthly fund profiles, in English and French, as PDF) from a  
-> sample PDF the analyst provides and finished data in a warehouse table. The analyst defines a  
-> report type once and verifies its data mapping; every value is read from a finished column, never  
-> computed; every accepted revision of a definition is kept with who accepted it and why; a  
-> production release is refused while a field is unmapped; compliance signs off every published  
-> document; documents go to the client portal and are kept seven years; a monthly batch is delivered  
-> within 24 hours of the as-of date.
+Blocking is a shape or a policy of the report ontology (a mapping that claims a column the table
+does not hold; a report past inception with no section); a gap is a question still open (fields
+with no column, a meaning missing in French). The report's lifecycle goes `inception` → `saved`
+as `StatusChange` facts, never rewritten. At the end you hear what is still owed before production
+and who can supply it.
 
-Replace it with yours. The project exists already (2.1), so Atlas moves to scene 2.
+### 3.3 The product specification — Atlas
 
-### 2.3 Scene 2 — Specify (the product specification)
+**"Atlas, lead this product."** Scene 2 captures the *product's* obligations against
+`product-report` (which report types it must produce, the data rule, channels, sign-offs, run
+guarantees), each section through the gates, `oto query questions` after each: the product's
+questions answer, the domain's are the report you just defined. Scene 4 captures the design
+(`ddd`) and the flow of *your* build and run; Atlas reports `SA17` (what nothing satisfies) and
+`WK5` (what slips if a component is late) as they become answerable.
 
-The **capture** skill reads `capture.json` and asks the sections in order: _a report product_  
-_owner_ (RP1: which report types, for whom, how often), _the data team_ (RP2: where the data must  
-come from), _a designer_ (RP3: layout and fidelity), _operations_ (RP4, RP6, RP8), _compliance_  
-(RP5, RP7), then the product core's askers (PR1–PR25: purpose, personas, requirements, releases,  
-risks, decisions). After each **\[C\]**, Atlas reports the gate in the engine's words and what the  
-graph now answers. Expect, after the first section: _"the graph answers PR1, RP1; open: Q2, Q4,_  
-_Q5, Q7 …"_ — the report domain's questions are open because scene 3 has not happened. That is  
-correct.
+### 3.4 Generate the template — `/pdf-to-template:pdf-to-template`
 
-What you bring: the report types your tool must produce, who owns their definition, the data  
-rule (finished columns or computed?), the channels, the sign-offs, the run guarantees.
+From the same sample PDF: inspect, palette, author the HTML/CSS + Jinja2 template, render, diff
+against the source until the gate passes, freeze. Its result is a `TemplateRelease`: capture it
+(the release, the sample it reproduces, its thresholds, the run that produced it) so Q9, Q13, Q14,
+Q21 and Q22 answer and `RP10` can say the report type is ready for production.
 
-### 2.4 Scene 3 — Derive the domain (the report specification)
+### 3.5 Generate the code of the flow — `/flow:implement-step`
 
-"What must this product know?" For a report product the domain pack exists (`report`), so Atlas  
-captures **your report type's definition** against it rather than deriving a new vocabulary:  
-`oto ontology capture` already lists the `report` sections (Q1–Q26, asked by the analyst, the  
-data team, compliance, the release manager): the report type's identity and parameters (Q2), its  
-sections and fields in order (Q7), the table and the column that supplies each field (Q4, Q5),  
-the field meanings per locale (Q3), the rules (Q14), the sample document and thresholds (Q9),  
-where documents go (Q10), when it runs (Q11), the quality checks and findings (Q24–Q26).
+For the steps of your flow (or, to see it on the real one, the `~/explore-flow` project):
 
-What you bring: one real report type — its sample PDF's sections and fields, the warehouse table  
-and columns, the parameters that identify a document (fund, period, locale). This is the part  
-only you can do, and the part that makes RP10 (_"which report types are not ready for production,_  
-_and what blocks each"_) compute instead of being asserted.
+1. `kg_brief implement-step` — the table: which steps are READY, which BLOCKED and on what.
+2. `kg_brief write-tests STEP=<step>` — the tests first: a pass and a fail case per check, a
+   route per transition, a property per invariant.
+3. `kg_brief implement-step STEP=<step>` — READY: the script's whole specification (what it reads
+   and writes, the fields of each artifact, the checks and thresholds, the metrics, the config
+   parameters, the outcomes). The agent writes the tests, then the script, citing the graph
+   (`# implements check.reports.chk-unmapped`), runs the tests. **BLOCKED** (`FL3: JSON output has
+   no field specification`): the agent stops and asks you for the fact; `/prd-architecture-studio:capture`
+   takes it through the gates; the brief is asked again.
+4. The step is implemented: capture `isImplemented` and the `Implementation`, so FL15 stops listing it.
 
-If instead your product's domain is new (not a report), this scene is `/oto:start` on the  
-specification, then **ontology-interview**: OTO derives the domain questions from the  
-requirements and you confirm them.
+To see the loop end to end before touching your own flow: `oto query brief implement-step
+STEP=step.b01_inspect` in `~/explore-flow` is BLOCKED FL3; capture the fields of `inspect_report`
+(a JSON artifact), re-ask, READY, then let the agent write `step_inspect.py` from the brief.
 
-### 2.5 Scene 4 — Design and flow
+### 3.6 Publish, and let a reader ask — `/prd-architecture-studio:prd-site`, scene 6
 
-**architecture-build** captures against `ddd` (which brings `software-architecture`): the  
-subdomains and bounded contexts, which component carries each, the use cases that `satisfies`  
-the requirements, commands, events, aggregates, the decisions. Then the **flow**: the steps of  
-the production run (load, render, verify, publish) and of the template build, their checks  
-against config parameters, their outcomes and transitions, the artifacts with their fields. Atlas  
-reports `SA17` (_which requirements does nothing in the design satisfy yet_) and `DD24` after  
-every section; `WK5` once there is a plan.
-
-What you bring: how you actually build and run it today — the scripts, what they read and write,  
-what each checks, what a failure does.
-
-### 2.6 Scene 5 — Build (code, with the brief)
-
-Say what you want built: _"implement the verify step"_. **feature-flow** validates the idea  
-against the product's purpose (`kg_ask PR4`), the impact on the design and the flow (`kg_brief impact-artifact`, `kg_neighbors`), the acceptance scenarios, then stops at Gate 3. After your go:
-
-1.  `kg_brief write-tests STEP=<step>` → READY: the tests to write first (a pass and a fail case  
-    per check, a route per transition, a property per invariant).
-2.  `kg_brief implement-step STEP=<step>` → READY with every fact the script needs (what it  
-    reads and writes, the fields of each JSON artifact, the checks and their thresholds, the  
-    metrics to record, the parameters from config, the outcomes and where each goes); or  
-    **BLOCKED by name** — _"FL3: JSON output has no field specification"_ — and Atlas asks you  
-    for the missing fact, captures it, re-asks. No code before READY.
-3.  The agent writes the tests, then the script, citing the graph (`# implements check.reports.chk-unmapped`), runs the tests, and records that the step is implemented.
-
-The code is written by the session, in your stack, from the brief; OTO never writes code, it  
-decides whether the agent knows enough to.
-
-### 2.7 Scene 6 — Publish, and scene 7 — Readers
-
-**prd-site**: `oto build --target site --view ~/Downloads/prd-architecture-studio/views/prd-site`  
-— the PRD and Architecture site, from the graph, with the honest coverage bar. Then the store:  
-`oto publish --repo <your query repo> --site`. A reader: `oto sync --repo <url>` then  
-`kg_ask`, `kg_brief`; or, for the domain pack, `/plugin install report@<registry>` once D1 is  
-pushed.
+```bash
+oto build --target site --view "<the studio plugin root>/views/prd-site"   # the PRD and Architecture site, from the graph
+oto publish --repo <your query repository> --site                           # the store, with the site beside it
+oto sync --repo <that repository> --dest ~/reports-kg                       # a reader, anywhere: then kg_ask, kg_brief
+```
 
 ---
 
-## 3\. What to expect, and what not to
+## 4. What to expect, and what refuses
 
-*   **Empty is honest.** Sections of the site, questions in `oto query questions` and the coverage  
-    bar say what nobody has captured yet. Atlas never fills them.
-*   **A question reports; a policy refuses.** `curate check` lists open questions as gaps and refuses  
-    only shapes and blocking policies (an unmapped field in production, a changed fact with no  
-    supersession).
-*   **Ids are yours, scoped.** Your capture ids (`FR1`, `RT-FPB`) become `requirement.<scope>.fr1`;  
-    two products' `FR1` never collide.
-*   **The flow's test obligations** are `requiresTest` edges for a captured flow (the engine derives  
-    edges, not nodes); the materialised obligations with citable ids exist only for the ported  
-    pdf-to-template flow (`report-ontology/fixtures/pdf-to-template/graph.json`). To work on that  
-    flow instead: `oto init --ontology flow,report --empty`, copy the fixture graph in, build, and  
-    `oto query brief implement-step` prints what `kgctl readiness` printed.
-
-## 4\. If something refuses
+- **Empty is honest.** The site's coverage bar, `oto query questions` and every brief say what
+  nobody has captured yet. No agent fills it.
+- **A question reports; a policy refuses.** `curate check` lists open questions as gaps and refuses
+  only shapes and blocking policies.
+- **Ids are yours, scoped.** `FR1` in a capture with `scope: fund-report` becomes
+  `requirement.fund-report.fr1`; two reports' `FR1` never collide.
+- **OTO never writes code.** It decides whether the agent knows enough to; the agent writes it,
+  in your stack, from the brief.
 
 | It says | It means | Do |
-| --- | --- | --- |
-| `is not a capture against this vocabulary: … has no link 'x'` | the item names a field or link the pack does not declare | read `capture.json`'s `types`; use the declared name, or change the vocabulary through `oto ontology check` |
-| `candidate would change the graph … blocking: shape …` | a declared constraint is broken | fix the capture, never force |
-| `question Q7 unanswered` under **gap** | open work | tell the person; it does not block |
-| `BLOCKED FL3` | the implementing agent lacks a fact | capture it (a second capture of the same item with the missing link is fine) |
-| `label, summary differ from the candidate. A changed fact is a supersession` | the same id, a different fact | say it changed (supersede) or use the new id |
+|---|---|---|
+| `is not a capture against this vocabulary: … has no link 'x'` | an item names a field or link the pack does not declare | read `capture.json`'s `types`; use the declared name |
+| `blocking: shape …` / `policy …` | a declared constraint is broken | fix the capture, never force |
+| `question Q4 unanswered` under gap | open work | tell the person; it does not block |
+| `BLOCKED FL3` | the implementing agent lacks a fact | capture it (the same item again, with the missing link, is fine) |
+| `A changed fact is a supersession` | the same id, a different fact | say it changed, or use a new id |
