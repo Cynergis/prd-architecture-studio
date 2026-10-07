@@ -20,7 +20,7 @@ longer carries a vocabulary or a graph of its own. It depends on the `oto` plugi
 | **prd-build** | The specification, captured against `product` and the product type's pack (`product-report`, …). |
 | **architecture-build** | The design, captured against `ddd`, which sits on `software-architecture` and `product`. |
 | **feature-flow** | A feature through the gates, read from the graph: the idea against the product's purpose (`kg_ask`), the impact on the design and the flow (`kg_neighbors`, `kg_brief impact-*`), the scenarios, then test-first with `kg_brief write-tests` and `kg_brief implement-step` in hand — BLOCKED by name until the missing fact is captured. |
-| **prd-site** | The navigable site, rendered from `data.js`, a projection of the graph. |
+| **prd-site** | The navigable site as an OTO view (`views/prd-site`): `data.js` is written from the graph by the engine on every build, never by hand. |
 
 What left in version 2: `knowledge-graph` and the mesh ontology (the packs are the ontology; the
 knowledge base is the graph), the built-in section lists of `prd-build` and `architecture-build`
@@ -54,8 +54,9 @@ Then: **"Atlas, lead this product."** See `GETTING-STARTED.md`.
 
 ## Tests
 
-`tests/test_scenes.py` runs scenes 1 to 5 scripted on the report application against the OTO
+`tests/test_scenes.py` runs scenes 1 to 7 scripted on the report application against the OTO
 release the plugin pins (`oto.release` in `.claude-plugin/plugin.json`, 0.9.3; `OTO_HOME` or `oto-kg` installed, and the `product` and `product-report`
 packs on the machine, plus `ddd` and `flow`): the project, a capture of the report product's obligations, the gates, the
 questions the graph answers and the ones left open, the design and the flow traced to the specification, and the
-implementing agent's brief: BLOCKED by name, the missing fact captured, READY.
+implementing agent's brief: BLOCKED by name, the missing fact captured, READY; the site from the graph, the domain pack on
+a marketplace and the product's store published; a reader who installs the pack and one who syncs the store, both asking.

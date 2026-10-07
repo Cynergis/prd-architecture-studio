@@ -1,57 +1,37 @@
 ---
 name: prd-site
 description: >
-  Generate or regenerate the navigable PRD + Architecture HTML site from a data.js file using the
-  bundled template. Use when the user wants to generate the site, build or render the HTML page,
-  produce the PRD/Architecture viewer, or publish it to GitHub Pages.
+  Serve or publish the navigable PRD + Architecture site as a view of the knowledge base: the
+  engine fills it from the graph, nobody edits its data. Use when the user wants to see the site,
+  build or render the HTML page, produce the PRD/Architecture viewer, or publish it to GitHub Pages.
 ---
 
-# Generate the PRD + Architecture site
+# The PRD + Architecture site, from the graph
 
-Render `window.__PRD__` and `window.__ARCH__` (from a `data.js`) into the self-contained, read-only
-viewer. The viewer is a static, data-driven template — content lives only in `data.js`, so
-regenerating after edits is deterministic.
-
-## Inputs
-
-A `data.js` defining `window.__PRD__` and `window.__ARCH__` per
-`${CLAUDE_PLUGIN_ROOT}/skills/prd-site/references/data-schema.md`.
-- If the user has one, use it.
-- If not, offer to (a) start from the bundled sample at
-  `${CLAUDE_PLUGIN_ROOT}/skills/prd-site/template/data.js`, or (b) run **prd-build** and
-  **architecture-build** first to author the content.
+The site is an OTO view, `${CLAUDE_PLUGIN_ROOT}/views/prd-site`: `app.json` declares the data file
+it reads (`data.js`: `window.__PRD__`, `window.__ARCH__`) and the projections that fill it from the
+knowledge base. There is no data file to author: what the graph holds is what the site shows, dated;
+a section the graph cannot fill is empty until a section is captured (**capture**).
 
 ## Steps
 
-1. Confirm the path to `data.js` and the output folder (default: a new `prd-site/` in the outputs).
-2. Run the generator:
-   ```bash
-   node ${CLAUDE_PLUGIN_ROOT}/skills/prd-site/generate.js <data.js> <outDir>
-   ```
-   It validates that `data.js` parses and defines both globals, then writes the four viewer files
-   (`index.html`, `support.js`, `engine.js`, and the provided `data.js`) plus `.nojekyll`,
-   `README.md`, `serve.sh`, `publish.sh`, and `.github/workflows/deploy.yml` into `<outDir>`.
-   Only `data.js` changes per project; `index.html`, `support.js`, and `engine.js` are copied verbatim.
-3. If generation fails, report the parse error and fix `data.js` (it must be valid JavaScript —
-   object literals, not JSON).
-4. Present `<outDir>/index.html` to the user.
+1. The project: an OTO project with a build (`oto status --project <root>`; `oto build` if it is
+   stale). The view requires the product's classes (`app.json`, `requires`); a project that lacks
+   them is refused with the names.
+2. **See it live**: `oto serve --project <root> --view ${CLAUDE_PLUGIN_ROOT}/views/prd-site`, then
+   open the URL it prints. The page reads the store; a rebuild shows up on reload.
+3. **Publish it**: `oto build --project <root> --target site --view ${CLAUDE_PLUGIN_ROOT}/views/prd-site`
+   writes `build/site/` (the four files and `data.js` generated); `bash build/site/publish.sh
+   <repo url>` puts it on GitHub Pages. Mermaid loads from a CDN, so viewing needs internet.
+4. Say what the site shows and what it cannot yet: read `data.js`'s empty sections back as the
+   open questions they are (`oto query questions`), never fill them by hand.
 
 ## What the site contains
 
-Two switchable documents. PRD: Overview, Strategic Context, Personas, Product, Use Cases / Journey,
-Specifications (Functional / Non-Functional / Policies), Release & Rollout, Governance, Risk,
-Glossary. Architecture: Context & Drivers, Decisions (ADRs), Tech Stack, Components (DDD subdomains →
-aggregate + components with ten facets), Resources, APIs, Integrations, Security, Infrastructure
-(per-environment), Design / UX, Project Structure, Knowledge Base. Cross-links are bidirectional and
-Mermaid diagrams render from a CDN.
-
-## Publishing (GitHub Pages)
-
-The output is ready for GitHub Pages: push the folder to `main`, set Settings → Pages → Source to
-"GitHub Actions". The bundled workflow deploys it; `.nojekyll` serves files as-is. Mermaid loads from
-a CDN, so viewing needs internet — vendor `mermaid.min.js` locally for offline use.
-
-## Editing later
-
-Change `data.js` (by hand or via prd-build / architecture-build) and regenerate. The template
-(`index.html`) rarely changes; the content is entirely in `data.js`.
+PRD: Overview, Strategic Context, Personas, Product, Use Cases / Journey, Specifications
+(Functional / Non-Functional / Policies), Release & Rollout, Governance, Risk, Glossary.
+Architecture: Context & Drivers, Decisions, Tech Stack, Components (subdomains → contexts with
+their commands, events, read models, rules), Resources, APIs, Integrations, Security,
+Infrastructure, Design / UX, Project Structure, Knowledge Base. The projection maps each from the
+`product`, `software-architecture` and `ddd` packs; a section no pack covers yet (tech stack,
+design links, the pattern library) is empty by declaration, not by omission.

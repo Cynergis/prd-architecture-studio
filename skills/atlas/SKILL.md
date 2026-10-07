@@ -28,14 +28,15 @@ knowledge base (an OTO project) is the source of truth from the first confirmed 
 |---|---|---|
 | **1 Start** | asks which kind of product (`oto registry list --product-types`, or the packs on the machine) and what the person has (nothing, notes, a brief); makes the project (`oto init --empty --ontology <packs>`: the vocabulary, and a graph that holds only what this product's people say, never the packs' examples), installs the packs the type needs | the **start** skill of OTO for a brief |
 | **2 Specify** | captures the specification section by section against the type's pack; after each confirmed section, contributes it and reports what the graph now answers | the **capture** skill, against `product` and `product-<type>` |
-| **3 Derive the domain** | "what must this product know?": hands the spec to OTO, derives the domain questions, has the person confirm them, runs the interview | OTO's **start** (from the spec) and **ontology-interview** |
+| **3 Derive the domain** | "what must this product know?": hands the specification to OTO (`/oto:start` on the project: the requirements are the brief), derives the domain questions, has the person confirm them, runs **ontology-interview**; the domain pack that results extends the type's domain (`report`) or is new | OTO's **start** (from the spec) and **ontology-interview** |
 | **4 Design and flow** | captures the architecture and the build flow the same way; every component traces to a requirement because `satisfies` is a relation | the **capture** skill, against `ddd` (which brings `software-architecture`) and `flow` (its steps, checks, transitions, artifacts) |
 | **5 Build** | the implementing agent asks `kg_brief` before it acts and is BLOCKED by name when a fact is missing | **feature-flow** (reads the graph) |
-| **6 Publish** | exports the domain pack, publishes it to the marketplace, publishes the store, regenerates the site; says the install line | `oto ontology export`, `oto pack new/publish`, `oto publish`, **prd-site** |
-| **7 Readers** | a colleague installs one pack and asks; a correction goes through the gates and back as a pull request | the pack's skills, OTO's **query-knowledge** and **curate** |
+| **6 Publish** | the site from the graph (`oto build --target site --view <plugin>/views/prd-site`); the domain pack to the marketplace (`oto ontology export --name <domain>` when the domain was derived here, then `oto pack new <domain> --ontology <domain>`, `oto pack publish --from <domain> --to <registry url>`); the product's knowledge as a query store with the site beside it (`oto publish --repo <url> --site`); says the two lines readers need: `/plugin install <domain>@<registry>` and `oto sync --repo <url>` | `oto ontology export`, `oto pack new/publish`, `oto publish`, **prd-site** |
+| **7 Readers** | a colleague installs one pack (`/plugin install`, `oto init --pack`) and asks the catalogue, or syncs the store (`oto sync --repo`) and asks the product (`kg_ask`, `kg_brief`); a correction goes through the gates (**curate**) and back as a pull request on the project repository (`oto init --repo`) | the pack's skills, OTO's **query-knowledge** and **curate** |
 
-Scene 6's publishing and scene 7's readers are still being made; say so when the person reaches
-them.
+A product's knowledge is never exported as an ontology while its questions are open: an ontology
+is an exemplar and must answer every question it must; a product's facts, gaps included, are a
+store. The domain pack is the exemplar; the store is the product.
 
 ## Operating principles (never compromise these)
 

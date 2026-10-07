@@ -1,13 +1,16 @@
-"""Scenes 1 to 5 of the arc, scripted on the report application against the OTO release this
+"""Scenes 1 to 7 of the arc, scripted on the report application against the OTO release this
 plugin pins: the project (scene 1), a capture of the report product's obligations through the
 gates and the questions the graph then answers (scene 2), what scene 3 derives from (the
 specification as facts), the design captured against `ddd` and traced to the specification and
-the flow captured against `flow` (scene 4), and the implementing agent's brief: BLOCKED by name
-until the missing fact is captured, then READY (scene 5). Needs the engine importable (`OTO_HOME`, or `oto-kg` installed)
+the flow captured against `flow` (scene 4), the implementing agent's brief: BLOCKED by name
+until the missing fact is captured, then READY (scene 5), the site rendered from the graph, the
+domain pack on a marketplace and the product's store and site published (scene 6), and two
+readers: one installs the pack and asks, one syncs the store and asks (scene 7). Needs the engine importable (`OTO_HOME`, or `oto-kg` installed)
 and the `product` and `product-report` packs on the machine (`oto ontology list`)."""
 import json
 import os
 import pathlib
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -46,9 +49,12 @@ def _captured(root, *captures):
     assert oto_cli("build", "--project", root)[0] == 0
 
 
-def oto_cli(*args, cwd=None):
+VIEW = ROOT / "views" / "prd-site"
+
+
+def oto_cli(*args, cwd=None, env=None):
     r = subprocess.run([sys.executable, "-m", "oto.cli", *args], capture_output=True, text=True, cwd=cwd,
-                       env=dict(os.environ, PYTHONPATH=str(OTO)))
+                       env=dict(os.environ, PYTHONPATH=str(OTO), **(env or {})))
     return r.returncode, r.stdout + r.stderr
 
 
@@ -175,3 +181,67 @@ def test_scene_4_the_flow_is_captured_against_flow_and_scene_5_the_agent_is_bloc
         assert code == 0 and "->  READY" in out and "+ FL3 REQ" in out and "[2 fact(s)]" in out, out
         code, out = oto_cli("query", "--project", root, "brief", "impact-parameter", "PARAM=configparameter.fund-report.cfg-max-unmapped")
         assert code == 0 and "->  READY" in out and "[1 fact(s)]" in out, "the check compared to it: " + out
+
+
+def _globals(site):
+    """data.js, read as the browser would: the two globals."""
+    r = subprocess.run(["node", "-e", "const fs=require('fs'),vm=require('vm');const w={};"
+                        "vm.runInNewContext(fs.readFileSync(process.argv[1],'utf8'),{window:w});"
+                        "console.log(JSON.stringify({PRD:w.__PRD__,ARCH:w.__ARCH__}))", os.path.join(site, "data.js")],
+                       capture_output=True, text=True)
+    assert r.returncode == 0, r.stderr
+    return json.loads(r.stdout)
+
+
+@pytest.mark.skipif(not shutil.which("node"), reason="node is needed to read data.js")
+def test_scene_6_the_site_is_a_view_of_the_graph_and_scene_7_readers_install_a_pack_or_sync_the_store():
+    with tempfile.TemporaryDirectory() as root, tempfile.TemporaryDirectory() as home:
+        # the product, specified, designed, flowed (scenes 2 to 5)
+        assert oto_cli("init", "--name", "Fund report automation", "--slug", "funds", "--ontology", "product-report,ddd,flow", "--empty", "--project", root)[0] == 0
+        assert oto_cli("curate", "start", "--project", root)[0] == 0
+        _captured(root, CAPTURE, DESIGN, FLOW, FLOW_FIELDS)
+        # scene 6: the site, from the graph; nobody wrote data.js
+        code, out = oto_cli("build", "--project", root, "--target", "site", "--view", str(VIEW))
+        assert code == 0 and "site with app prd-site" in out, out
+        site = os.path.join(root, "build", "site")
+        g = _globals(site)
+        assert g["PRD"]["overview"]["projectName"] == "Fund report automation"
+        assert {f["id"] for f in g["PRD"]["specs"]["functional"]} == {"requirement.fund-report.fr%d" % i for i in (1, 2, 3, 4)}
+        assert g["PRD"]["usecases"][0]["frs"] and g["PRD"]["specs"]["policies"][0]["id"] == "policy.fund-report.pol1"
+        assert g["ARCH"]["domains"][0]["components"][0]["id"] == "boundedcontext.fund-report.bc-def"
+        assert g["ARCH"]["domains"][0]["components"][0]["resource"] == ["component.fund-report.cmp-def"]
+        assert g["ARCH"]["decisions"][0]["affects"] == ["aggregate.fund-report.agg-def"]
+        assert g["ARCH"]["stack"] == [] and g["PRD"]["glossary"] == [], "a section no pack covers is empty, not invented"
+        assert os.path.exists(os.path.join(site, "index.html")) and os.path.exists(os.path.join(site, "publish.sh"))
+        # scene 6: the domain pack to a marketplace, the product's store and site to a query repository
+        sandbox = {"OTO_ONTOLOGIES": os.path.join(home, "ontologies"), "OTO_PACKS": os.path.join(home, "packs"),
+                   "OTO_REGISTRIES": os.path.join(home, "registries.json")}
+        os.makedirs(sandbox["OTO_ONTOLOGIES"])
+        for name in ("report",):
+            shutil.copytree(ontologies.dir_for(name), os.path.join(sandbox["OTO_ONTOLOGIES"], name))
+        market, store = os.path.join(home, "market.git"), os.path.join(home, "funds-kg.git")
+        for bare in (market, store):
+            subprocess.run(["git", "init", "--quiet", "--bare", "-b", "main", bare], check=True)
+        assert oto_cli("pack", "new", "report", "--ontology", "report", "--maintainer", "Cynergis", env=sandbox)[0] == 0
+        code, out = oto_cli("pack", "publish", "--from", "report", "--to", market, "--registry-name", "market", "--note", "the report domain", env=sandbox)
+        assert code == 0 and "/plugin install report@market" in out, "the install line Atlas says: " + out
+        code, out = oto_cli("publish", "--project", root, "--repo", store, "--site", "--source", "funds@scene")
+        assert code == 0 and "published build_seq" in out, out
+        # scene 7: a reader installs one pack and asks the catalogue; another syncs the store and asks the product
+        shutil.rmtree(os.path.join(sandbox["OTO_PACKS"], "report"))
+        assert oto_cli("registry", "add", market, env=sandbox)[0] == 0
+        code, out = oto_cli("pack", "add", "report", env=sandbox)
+        assert code == 0 and "embeds the ontology report@" in out, out
+        reader = os.path.join(home, "reader")
+        code, out = oto_cli("init", "--name", "Reader", "--slug", "reader", "--pack", "report", "--project", reader, env=sandbox)
+        assert code == 0 and "pack: report @1" in out, out
+        assert oto_cli("build", "--project", reader, env=sandbox)[0] == 0
+        code, out = oto_cli("query", "--project", reader, "ask", "Q7", "REPORT=report.fund-profile-balanced", env=sandbox)
+        assert code == 0 and "status: answered" in out, out
+        synced = os.path.join(home, "reader-kg")
+        assert oto_cli("sync", "--repo", store, "--dest", synced, env=sandbox)[0] == 0
+        code, out = oto_cli("query", "--project", synced, "ask", "RP2", "REPORTTYPE=reporttype.fund-report.rt-fpb", env=sandbox)
+        assert code == 0 and "Read every value from a finished column" in out, out
+        code, out = oto_cli("query", "--project", synced, "brief", "implement-step", env=sandbox)
+        assert code == 0 and "4 READY, 0 BLOCKED" in out, out
+        assert os.path.exists(os.path.join(synced, "site", "data.js")), "the site travels with the store"

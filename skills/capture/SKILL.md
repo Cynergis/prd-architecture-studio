@@ -87,7 +87,7 @@ section's candidate; `oto build` makes the answers queryable. Atlas decides when
 
 When the specification's sections are captured, Atlas moves to scene 3 (OTO's **start** on the
 specification, then **ontology-interview**). When the design's are, to the flow. The site
-(`prd-site`) renders from `data.js`, a projection of the graph, regenerated after a build.
+(`prd-site`) is a view the engine fills from the graph on every build; nobody edits its data.
 
 ## Guardrails
 
