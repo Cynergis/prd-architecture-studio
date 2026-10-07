@@ -19,7 +19,7 @@
     "oto"
   ],
   "oto": {
-    "release": "0.8.3",
-    "packs": ["product", "product-report"]
+    "release": "0.9.1",
+    "packs": ["product", "product-report", "ddd"]
   }
 }

@@ -18,7 +18,7 @@ longer carries a vocabulary or a graph of its own. It depends on the `oto` plugi
 | **studio** | The arc end to end, in one go, with Atlas. "Start a product with the studio." |
 | **capture** | The elicitation engine: reads a pack's `capture.json` (the questions by asker, the classes with their fields and links, every field carrying its term), runs the BMAD loop (ask, draft, **[A]** elicit, **[P]** perspectives, **[C]** continue), and on every **C** contributes the section through `oto curate propose`, `add` and `check`, then reports what the graph answers (`oto query questions`). |
 | **prd-build** | The specification, captured against `product` and the product type's pack (`product-report`, …). |
-| **architecture-build** | The design, captured against `software-architecture` and `ddd`. |
+| **architecture-build** | The design, captured against `ddd`, which sits on `software-architecture` and `product`. |
 | **feature-flow** | A feature through the gates: validate against the goals, impact, acceptance, test-first implementation. (Reads the graph in a later release.) |
 | **prd-site** | The navigable site, rendered from `data.js`, a projection of the graph. |
 
@@ -54,7 +54,7 @@ Then: **"Atlas, lead this product."** See `GETTING-STARTED.md`.
 
 ## Tests
 
-`tests/test_scenes.py` runs scenes 1 to 3 scripted on the report application against the OTO
-release the plugin pins (`oto.release` in `.claude-plugin/plugin.json`, 0.8.3; `OTO_HOME` or `oto-kg` installed, and the `product` and `product-report`
-packs on the machine): the project, a capture of the report product's obligations, the gates, the
-questions the graph answers.
+`tests/test_scenes.py` runs scenes 1 to 4 (the design half of 4) scripted on the report application against the OTO
+release the plugin pins (`oto.release` in `.claude-plugin/plugin.json`, 0.9.1; `OTO_HOME` or `oto-kg` installed, and the `product` and `product-report`
+packs on the machine, plus `ddd`): the project, a capture of the report product's obligations, the gates, the
+questions the graph answers and the ones left open, the design traced to the specification.

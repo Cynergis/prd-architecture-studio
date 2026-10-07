@@ -13,7 +13,7 @@ description: >
 The PRD is the specification level of the knowledge base: what the product must do, for whom,
 under what rules, why. It is captured against packs, not against a form of this plugin's own.
 
-1. The project composes `product` and the product type's pack (`oto init --ontology
+1. The project composes `product` and the product type's pack (`oto init --empty --ontology
    product,product-report`, or Atlas's scene 1). If the type's pack does not exist yet, capture
    against `product` alone and tell the person what a type pack would add.
 2. Run the **capture** skill with the schema of that project. Its sections are the askers the

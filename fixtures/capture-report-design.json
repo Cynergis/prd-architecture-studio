@@ -1,0 +1,348 @@
+{
+  "doc": "report-product-design",
+  "as_of": "2026-10-07",
+  "scope": "fund-report",
+  "items": [
+    {
+      "type": "Team",
+      "id": "TEAM-REPORTS",
+      "label": "Report platform team",
+      "where": "§1",
+      "quote": "Report platform team",
+      "summary": "Runs the report platform; on call for the monthly batch."
+    },
+    {
+      "type": "System",
+      "id": "SYS",
+      "label": "Fund report platform",
+      "summary": "Produces the fund documents from their definitions.",
+      "links": {
+        "owned_by": [
+          "TEAM-REPORTS"
+        ],
+        "enables": [
+          "CAP-DOCS"
+        ]
+      },
+      "where": "§1",
+      "quote": "Fund report platform"
+    },
+    {
+      "type": "Capability",
+      "id": "CAP-DOCS",
+      "label": "Produce the fund documents",
+      "summary": "What the business loses when the platform is down: the month's documents.",
+      "where": "§1",
+      "quote": "Produce the fund documents"
+    },
+    {
+      "type": "Environment",
+      "id": "ENV-PROD",
+      "label": "Production",
+      "summary": "Where the monthly batch runs.",
+      "where": "§1",
+      "quote": "Production"
+    },
+    {
+      "type": "Subdomain",
+      "id": "SD-DEF",
+      "label": "Report definition",
+      "fields": {
+        "kind": "core"
+      },
+      "links": {
+        "realised_in": [
+          "BC-DEF"
+        ],
+        "serves": [
+          "valueproposition.fund-report.vp1"
+        ]
+      },
+      "where": "§2",
+      "quote": "Defining a report type and verifying its mapping is the core of the product."
+    },
+    {
+      "type": "BoundedContext",
+      "id": "BC-DEF",
+      "label": "Definition",
+      "summary": "Where a report type is defined, mapped and versioned.",
+      "fields": {
+        "architecture_style": [
+          "hexagonal"
+        ],
+        "stack": [
+          "python"
+        ],
+        "deployment_unit": "definition-service",
+        "readiness": "ready"
+      },
+      "links": {
+        "owned_by": [
+          "TEAM-REPORTS"
+        ],
+        "deployed_as": [
+          "CMP-DEF"
+        ]
+      },
+      "where": "§2",
+      "quote": "Definition"
+    },
+    {
+      "type": "BoundedContext",
+      "id": "BC-RENDER",
+      "label": "Rendering",
+      "summary": "Where a document is produced from a definition and finished data.",
+      "fields": {
+        "architecture_style": [
+          "hexagonal"
+        ],
+        "stack": [
+          "python"
+        ],
+        "deployment_unit": "render-job",
+        "readiness": "draft"
+      },
+      "links": {
+        "owned_by": [
+          "TEAM-REPORTS"
+        ],
+        "deployed_as": [
+          "CMP-RENDER"
+        ]
+      },
+      "where": "§2",
+      "quote": "Rendering"
+    },
+    {
+      "type": "ContextRelationship",
+      "id": "REL-1",
+      "label": "Rendering follows Definition",
+      "fields": {
+        "pattern": "customer_supplier",
+        "mechanism": "messaging"
+      },
+      "links": {
+        "between": [
+          "BC-DEF",
+          "BC-RENDER"
+        ],
+        "upstream": [
+          "BC-DEF"
+        ]
+      },
+      "where": "§2",
+      "quote": "Rendering follows Definition"
+    },
+    {
+      "type": "Component",
+      "id": "CMP-DEF",
+      "label": "Definition service",
+      "summary": "Holds every accepted revision of a report type's definition.",
+      "links": {
+        "part_of": [
+          "SYS"
+        ],
+        "runs_in": [
+          "ENV-PROD"
+        ],
+        "satisfies": [
+          "requirement.fund-report.fr3"
+        ]
+      },
+      "where": "§3",
+      "quote": "Definition service"
+    },
+    {
+      "type": "Component",
+      "id": "CMP-RENDER",
+      "label": "Render job",
+      "summary": "Produces the monthly documents from finished columns.",
+      "links": {
+        "part_of": [
+          "SYS"
+        ],
+        "runs_in": [
+          "ENV-PROD"
+        ],
+        "satisfies": [
+          "requirement.fund-report.fr1",
+          "requirement.fund-report.fr2"
+        ]
+      },
+      "where": "§3",
+      "quote": "Render job"
+    },
+    {
+      "type": "Component",
+      "id": "CMP-GATE",
+      "label": "Release gate",
+      "summary": "Refuses a production release while a field is unmapped.",
+      "links": {
+        "part_of": [
+          "SYS"
+        ],
+        "runs_in": [
+          "ENV-PROD"
+        ],
+        "satisfies": [
+          "requirement.fund-report.fr4"
+        ]
+      },
+      "where": "§3",
+      "quote": "Release gate"
+    },
+    {
+      "type": "UseCase",
+      "id": "UC-DEFINE",
+      "label": "Define a report type",
+      "fields": {
+        "readiness": "ready"
+      },
+      "links": {
+        "performed_by": [
+          "role.fund-report.role-analyst"
+        ],
+        "part_of": [
+          "BC-DEF"
+        ],
+        "issues": [
+          "CMD-ACCEPT"
+        ],
+        "satisfies": [
+          "requirement.fund-report.fr3"
+        ],
+        "serves": [
+          "valueproposition.fund-report.vp1"
+        ]
+      },
+      "where": "§4",
+      "quote": "The analyst defines the report type once and verifies its mapping."
+    },
+    {
+      "type": "Command",
+      "id": "CMD-ACCEPT",
+      "label": "Accept a definition revision",
+      "fields": {
+        "payload": [
+          "report_type: id",
+          "revision: int",
+          "accepted_by: role",
+          "why: string"
+        ],
+        "trigger_kind": "actor",
+        "readiness": "ready"
+      },
+      "links": {
+        "part_of": [
+          "BC-DEF"
+        ],
+        "triggered_by": [
+          "role.fund-report.role-analyst"
+        ],
+        "handled_by": [
+          "AGG-DEF"
+        ],
+        "raises": [
+          "EVT-ACCEPTED"
+        ]
+      },
+      "where": "§4",
+      "quote": "Accept a definition revision"
+    },
+    {
+      "type": "DomainEvent",
+      "id": "EVT-ACCEPTED",
+      "label": "Definition revision accepted",
+      "fields": {
+        "payload": [
+          "report_type: id",
+          "revision: int",
+          "accepted_at: datetime"
+        ]
+      },
+      "links": {
+        "part_of": [
+          "BC-DEF"
+        ]
+      },
+      "where": "§4",
+      "quote": "Definition revision accepted"
+    },
+    {
+      "type": "Aggregate",
+      "id": "AGG-DEF",
+      "label": "Report definition",
+      "fields": {
+        "readiness": "ready"
+      },
+      "links": {
+        "part_of": [
+          "BC-DEF"
+        ],
+        "root": [
+          "ENT-DEF"
+        ]
+      },
+      "where": "§4",
+      "quote": "Report definition"
+    },
+    {
+      "type": "Entity",
+      "id": "ENT-DEF",
+      "label": "Report type definition",
+      "fields": {
+        "fields": [
+          "id: id",
+          "revision: int",
+          "fields: list"
+        ]
+      },
+      "where": "§4",
+      "quote": "Report type definition"
+    },
+    {
+      "type": "Decision",
+      "id": "ADR-1",
+      "label": "Every accepted revision is kept, never overwritten",
+      "fields": {
+        "rationale": "an audit asks what the definition was on the day the document was produced",
+        "decided_on": "2026-10-07"
+      },
+      "links": {
+        "about": [
+          "AGG-DEF"
+        ],
+        "decided_by": [
+          "role.fund-report.role-analyst"
+        ]
+      },
+      "where": "§5",
+      "quote": "Every accepted revision is kept, never overwritten"
+    },
+    {
+      "type": "UseCase",
+      "id": "UC-PRODUCE",
+      "label": "Produce the month's documents",
+      "fields": {
+        "readiness": "draft"
+      },
+      "links": {
+        "performed_by": [
+          "role.fund-report.role-analyst"
+        ],
+        "part_of": [
+          "BC-RENDER"
+        ],
+        "satisfies": [
+          "requirement.fund-report.fr1",
+          "requirement.fund-report.fr2"
+        ],
+        "serves": [
+          "valueproposition.fund-report.vp1"
+        ]
+      },
+      "where": "§4",
+      "quote": "Each month the analyst runs the batch and reviews the documents."
+    }
+  ]
+}

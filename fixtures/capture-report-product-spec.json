@@ -52,6 +52,32 @@
       "quote": "The definition is the product, not the template."
     },
     {
+      "type": "ReportType",
+      "id": "RT-FPB",
+      "label": "Fund Profile (Balanced)",
+      "summary": "The monthly profile of the balanced fund: identity, performance, allocation, disclaimers.",
+      "fields": {
+        "reportId": "fund_profile_balanced",
+        "purpose": "Give the client the fund's monthly profile in one page.",
+        "lifecycleStatus": "inception",
+        "audience": [
+          "client"
+        ],
+        "cadence": "monthly",
+        "locale": [
+          "en",
+          "fr"
+        ]
+      },
+      "links": {
+        "owned_by": [
+          "ROLE-ANALYST"
+        ]
+      },
+      "where": "§3",
+      "quote": "The fund profile is produced monthly, in English and French, as PDF."
+    },
+    {
       "type": "Requirement",
       "id": "FR1",
       "label": "Produce the fund profile monthly, in English and French, as PDF",
@@ -65,7 +91,7 @@
           "VP1"
         ],
         "governs": [
-          "report.fund-profile-balanced"
+          "RT-FPB"
         ]
       },
       "where": "§3.1",
@@ -85,7 +111,7 @@
           "VP1"
         ],
         "governs": [
-          "report.fund-profile-balanced"
+          "RT-FPB"
         ]
       },
       "where": "§3.2",
@@ -105,7 +131,7 @@
           "VP1"
         ],
         "governs": [
-          "report.fund-profile-balanced"
+          "RT-FPB"
         ]
       },
       "where": "§3.6",
@@ -125,7 +151,7 @@
           "VP1"
         ],
         "governs": [
-          "report.fund-profile-balanced"
+          "RT-FPB"
         ]
       },
       "where": "§3.7",
@@ -142,7 +168,7 @@
       },
       "links": {
         "governs": [
-          "report.fund-profile-balanced"
+          "RT-FPB"
         ],
         "applies_to": [
           "PRODUCT"

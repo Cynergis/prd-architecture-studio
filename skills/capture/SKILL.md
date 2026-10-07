@@ -19,7 +19,7 @@ peer; never invent content the person has not confirmed.
 
 1. The project: an OTO project (`oto status --project <root>`). The packs to capture against are
    the ones the project composes (`project.config.json`, `ontology`); for a specification that is
-   `product` and `product-<type>`; for a design, `software-architecture` and `ddd`.
+   `product` and `product-<type>`; for a design, `ddd` (which brings `software-architecture`).
 2. The schema: `oto ontology capture --project <root>` writes `capture.json`, what the project's
    vocabulary asks for: **sections** (the questions grouped by who asks), **types** (the classes
    with their fields, links and what they require), every field and link carrying its `x-term`.
