@@ -7,6 +7,21 @@ engine, because Claude Code resolves a plugin's dependency on `oto` inside the p
 marketplace. OTO 0.11.1 adds that: `oto registry plugin`. Everything below needs your GitHub
 credentials, so it is yours to run; `publish-plugins.sh` in this folder runs part A in order.
 
+## Status on 2026-10-09
+
+Part A was run from this laptop: OTO's branch is pushed and its pull request open
+(https://github.com/Cynergis/oto/pull/3); the three repositories exist, **private**
+(`Cynergis/prd-architecture-studio`, `Cynergis/pdf-to-template-plugin`, `Cynergis/report-ontology`);
+the four packs and the two plugins are published to the registry's `stage-5` branch, pull request
+https://github.com/Cynergis/oto-registry/pull/2. What remains is yours:
+
+1. merge Cynergis/oto#3;
+2. re-run the registry's check (`gh run rerun 37948604090 --repo Cynergis/oto-registry`) and merge #2;
+3. decide the three repositories' visibility: a private plugin installs on a machine that is logged in
+   to GitHub (`gh auth login`, or a git credential); `gh repo edit Cynergis/<name> --visibility public`
+   otherwise;
+4. in `report-ontology/.github/workflows`, install the engine from `@main` instead of `@semantic-layer`.
+
 ## A. Once, from this laptop
 
 Use the checkout's `oto` (0.11.1): `export OTO_SOURCE=~/Downloads/oto; alias oto='uvx --from "$OTO_SOURCE" oto'`.
