@@ -50,7 +50,7 @@ graph.json  ◄── oto curate apply ◄── oto curate check ◄── oto 
 /plugin install prd-architecture-studio@cynergis       # once published
 ```
 
-Then: **"Atlas, lead this product."** See `GETTING-STARTED.md`, and `WALKTHROUGH.md` for the whole arc on a report product, dry run first.
+Then: **"Atlas, lead this product."** See `GETTING-STARTED.md`, and `WALKTHROUGH.md` for the whole arc on a report product, dry run first; `PUBLISH.md` to push every plugin to the Cynergis marketplace and start from a new laptop.
 
 ## Tests
 
